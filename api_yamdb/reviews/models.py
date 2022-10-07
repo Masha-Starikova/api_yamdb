@@ -106,10 +106,10 @@ class Review(models.Model):
     pub_date = models.DateTimeField(
         'Дата публикации', auto_now_add=True, blank=True
     )
-    #title = models.ForeignKey(
-    #    Title, on_delete=models.CASCADE,
-    #    related_name='reviews', blank=True
-    #)
+    title_id = models.ForeignKey(
+        Title, on_delete=models.CASCADE,
+        related_name='reviews', blank=True
+    )
 
     class Meta:
         ordering = ('-pub_date', )
@@ -128,11 +128,7 @@ class Comment(models.Model):
     pub_date = models.DateTimeField(
         'Дата публикации', auto_now_add=True, blank=True
     )
-    #title = models.ForeignKey(
-    #    Title, on_delete=models.CASCADE,
-    #    related_name='comments', blank=True
-    #)
-    review = models.ForeignKey(
+    review_id = models.ForeignKey(
         Review, on_delete=models.CASCADE,
         related_name='comments', blank=True
     )
