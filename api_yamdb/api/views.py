@@ -1,17 +1,12 @@
-from django.shortcuts import get_object_or_404
 from django.db.models import Avg
-
-from rest_framework import viewsets
+from django.shortcuts import get_object_or_404
 from django_filters import CharFilter
+from rest_framework import viewsets
+from reviews.models import Category, Genre, Review, Title
 
-from reviews.models import Genre, Category, Title, Review
-from api.serializers import (
-    GenreSerializer,
-    CategorySerializer,
-    TitleSerializer,
-    CommentSerializer,
-    ReviewSerializer
-)
+from api.serializers import (CategorySerializer, CommentSerializer,
+                             GenreSerializer, ReviewSerializer,
+                             TitleSerializer)
 
 
 class GenreViewSet(MixinsViewSet):
