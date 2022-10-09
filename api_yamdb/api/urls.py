@@ -4,13 +4,11 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 from rest_framework import routers
-from api.views import (
-    GenreViewSet, 
+from api.views import (GenreViewSet, 
     CategoryViewSet, 
     TitleViewSet, 
     CommentViewSet, 
-    ReviewViewSet
-)
+    ReviewViewSet)
 
 v1_router = routers.DefaultRouter()
 v1_router.register('genres', GenreViewSet, basename='genres')
