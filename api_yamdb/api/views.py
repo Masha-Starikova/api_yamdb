@@ -14,7 +14,7 @@ class GenreViewSet(viewsets.MixinsViewSet):
     serializer_class = GenreSerializer
 
 
-class CategoryViewSet(viewsets.MixinsViewSet):
+class CategoryViewSet(MixinsViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
 
