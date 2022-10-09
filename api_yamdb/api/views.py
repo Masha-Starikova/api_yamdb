@@ -2,9 +2,9 @@ from django.shortcuts import get_object_or_404
 from django.db.models import Avg
 
 from rest_framework import viewsets
-from django_filters import CharFilter
+from rest_framework.django_filters import CharFilter
+from rest_framework import filters
 
-<<<<<<< HEAD
 from reviews.models import Genre, Category, Title, Review
 from api.serializers import (
     GenreSerializer,
@@ -45,10 +45,6 @@ class TitleViewSet(viewsets.ModelViewSet):
     #permission_classes = (IsAdmin | IsReadOnly,)
     filter_backends = [rest_framework.DjangoFilterBackend]
     filterset_class = TitleFilter
-=======
-from reviews.models import Review, Title
-from api.serializers import CommentSerializer, ReviewSerializer
->>>>>>> Dev
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
