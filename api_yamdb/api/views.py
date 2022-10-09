@@ -4,6 +4,7 @@ from django.db.models import Avg
 from rest_framework import viewsets
 from django_filters import CharFilter
 
+<<<<<<< HEAD
 from reviews.models import Genre, Category, Title, Review
 from api.serializers import (
     GenreSerializer,
@@ -44,19 +45,23 @@ class TitleViewSet(viewsets.ModelViewSet):
     #permission_classes = (IsAdmin | IsReadOnly,)
     filter_backends = [rest_framework.DjangoFilterBackend]
     filterset_class = TitleFilter
+=======
+from reviews.models import Review, Title
+from api.serializers import CommentSerializer, ReviewSerializer
+>>>>>>> Dev
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
 
-#    def get_title(self):
-#        return get_object_or_404(Title, pk=self.kwargs.get('title_id'))
+    def get_title(self):
+        return get_object_or_404(Title, pk=self.kwargs.get('title_id'))
 
-#    def get_queryset(self):
-#        return self.get_title().reviews
+    def get_queryset(self):
+        return self.get_title().reviews
 
-#    def perform_create(self, serializer):
-#        serializer.save(author=self.request.user, title=self.get_title())
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user, title=self.get_title())
 
 
 class CommentViewSet(viewsets.ModelViewSet):
