@@ -1,10 +1,8 @@
-from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django.db.models import Avg
 
 from rest_framework import viewsets
-from rest_framework.django_filters import CharFilter
-from rest_framework import filters
+from django_filters import CharFilter
 
 from reviews.models import Genre, Category, Title, Review
 from api.serializers import (
