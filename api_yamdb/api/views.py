@@ -9,17 +9,17 @@ from api.serializers import (CategorySerializer, CommentSerializer,
                              TitleSerializer)
 
 
-class GenreViewSet(MixinsViewSet):
+class GenreViewSet(viewsets.MixinsViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
 
 
-class CategoryViewSet(MixinsViewSet):
+class CategoryViewSet(viewsets.MixinsViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
 
 
-class TitleFilter(FilterSet):
+class TitleFilter(viewsets.FilterSet):
     genre = CharFilter(field_name='genre__slug',
                        lookup_expr='icontains')
     category = CharFilter(field_name='category__slug',
