@@ -1,12 +1,17 @@
-from django.db.models import Avg
 from django.shortcuts import get_object_or_404
-from django_filters import CharFilter
-from rest_framework import viewsets
-from reviews.models import Category, Genre, Review, Title
+from django.db.models import Avg
 
-from api.serializers import (CategorySerializer, CommentSerializer,
-                             GenreSerializer, ReviewSerializer,
-                             TitleSerializer)
+from rest_framework import viewsets
+from django_filters import CharFilter
+
+from reviews.models import Genre, Category, Title, Review
+from api.serializers import (
+    GenreSerializer,
+    CategorySerializer,
+    TitleSerializer,
+    CommentSerializer,
+    ReviewSerializer
+)
 
 
 class GenreViewSet(MixinsViewSet):
@@ -32,8 +37,13 @@ class TitleFilter(FilterSet):
         fields = ['year']
 
 
-from reviews.models import Review, Title
-from api.serializers import CommentSerializer, ReviewSerializer
+class TitleViewSet(viewsets.ModelViewSet):
+    queryset = Title.objects.annotate(
+        rating=Avg('reviews__score')).order_by('rating')
+    serializer_class = TitleSerializer
+    #permission_classes = (IsAdmin | IsReadOnly,)
+    filter_backends = [rest_framework.DjangoFilterBackend]
+    filterset_class = TitleFilter
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
