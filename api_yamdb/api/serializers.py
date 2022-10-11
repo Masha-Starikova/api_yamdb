@@ -1,13 +1,33 @@
+from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from reviews.models import Genre, Category, Title, Comment, Review
 from .models import Token
 
 
+User = get_user_model()
+
+
 class TokenSerializer(serializers.ModelSerializer):
     class Meta:
         model = Token
         fields = '__all__'
+
+
+class MeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name']
+
+
+class AuthSerializer(serializers.Serializer):
+    username = serializers.CharField(required=True)
+    confirmation_code = serializers.CharField(max_length=4, required=True)
+
+
+class SignupSerializer(serializers.Serializer):
+    username = serializers.CharField(required=True)
+    email = serializers.EmailField(required=True)
 
 
 class GenreSerializer(serializers.ModelSerializer):
