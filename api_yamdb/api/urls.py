@@ -4,10 +4,17 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 from rest_framework import routers
-from api.views import CommentViewSet, ReviewViewSet, TokenViewSet, get_token, signup, Me
+from api.views import (GenreViewSet, 
+    CategoryViewSet, 
+    TitleViewSet, 
+    CommentViewSet, 
+    ReviewViewSet), TokenViewSet, get_token, signup, Me
 
 
 v1_router = routers.DefaultRouter()
+v1_router.register('genres', GenreViewSet, basename='genres')
+v1_router.register('categories', CategoryViewSet, basename='categories')
+v1_router.register('titles', TitleViewSet, basename='titles')
 # v1_router.register('me', Me)
 v1_router.register('token', TokenViewSet)
 v1_router.register(
@@ -28,3 +35,4 @@ urlpatterns = [
     path('v1/signup/', signup),
     path('v1/me/', Me.as_view({'patch': 'partial_update'}))
 ]
+
