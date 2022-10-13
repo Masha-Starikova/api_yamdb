@@ -7,7 +7,6 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework import viewsets
 
 from api.authenticaton import CustomAuthentication
-from api.models import Token
 from api.errors import Error
 from api.serializers import (
     CommentSerializer,
@@ -19,7 +18,7 @@ from api.serializers import (
 )
 from api.permissions import IsAdmin, IsModerator, IsOwner
 from api.services import create_user, update_token
-from reviews.models import Review, Title
+from reviews.models import Review, Title, Token
 
 
 User = get_user_model()
@@ -34,9 +33,9 @@ class Me(viewsets.ViewSet):
         user = get_object_or_404(User, pk=request.user.pk)
         serializer = MeSerializer(data=request.data, partial=True)
         if serializer.is_valid():
-            serializer.save()
-            return JsonResponse({'ok': 'ok'})
-        return JsonResponse({'fail': 'fail'})
+            serializer.update_user_data(serializer.validated_data, user)
+            return JsonResponse({'ok': 'data was updated'})
+        return JsonResponse(Error.WRONG_DATA)
 
 
 @csrf_exempt

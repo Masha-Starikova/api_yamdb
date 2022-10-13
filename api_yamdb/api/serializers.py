@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from reviews.models import Genre, Category, Title, Comment, Review
-from .models import Token
+from reviews.models import Token
 
 
 User = get_user_model()
@@ -18,6 +18,12 @@ class MeSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['first_name', 'last_name']
+
+    def update_user_data(self, validated_data, user):
+        for k, v in validated_data.items():
+            setattr(user, k, v)
+        user.save()
+        return user
 
 
 class AuthSerializer(serializers.Serializer):

@@ -12,6 +12,12 @@ class User(AbstractUser):
     role = models.CharField(max_length=20, choices=ROLES, default='user')
 
 
+class Token(models.Model):
+    token = models.CharField(max_length=32, null=True, default=None)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, unique=True)
+    confirmation_code = models.CharField(max_length=4, null=False, blank=False, default='----')
+
+
 class Genre(models.Model):
     id = models.AutoField(primary_key=True, db_index=True)
     name = models.CharField(
