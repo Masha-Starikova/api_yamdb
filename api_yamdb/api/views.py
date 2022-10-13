@@ -109,7 +109,7 @@ class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.annotate(
         rating=Avg('reviews__score')).order_by('rating')
     serializer_class = TitleSerializer
-    permission_classes = (IsAdmin,)
+    permission_classes = (IsAdmin, IsModerator, IsOwner,)
     filter_backends = (DjangoFilterBackend)
     filterset_class = TitleFilter
 
