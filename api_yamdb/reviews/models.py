@@ -2,6 +2,7 @@ from django.db import models
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.contrib.auth.models import AbstractUser
 
+
 class User(AbstractUser):
     ROLES = (
         ('admin', 'admin'),
@@ -9,6 +10,7 @@ class User(AbstractUser):
         ('user', 'user')
     )
     role = models.CharField(max_length=20, choices=ROLES, default='user')
+    #bio=
 
 
 class Genre(models.Model):
