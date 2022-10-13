@@ -2,7 +2,10 @@ from rest_framework import permissions
 
 
 class IsAdmin(permissions.BasePermission):
-    def has_permission(self, request, view):
+    '''Пользовтель является админом,
+и он авторизирован.'''
+    def has_permission(self, request):
+
         return request.user.role == 'admin'
 
 

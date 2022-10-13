@@ -2,43 +2,60 @@ from django.db.models import Avg
 import json
 from django.views.decorators.csrf import csrf_exempt
 from api.services import create_user, update_token
+from rest_framework import permissions
+from rest_framework import status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework import filters, mixins
 
-from django.contrib.auth import get_user_model
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django_filters import CharFilter
 from rest_framework import viewsets
-from reviews.models import Category, Genre, Review, Title
+from reviews.models import Category, Genre, Review, Title, Token
 from django_filters.rest_framework import DjangoFilterBackend
 from api.permissions import IsAdmin, IsModerator, IsOwner
 from api.authenticaton import CustomAuthentication
-from api.models import Token
 from api.errors import Error
+from django_filters import rest_framework as filters
+from reviews.models import User
+
 
 from api.serializers import (
     CategorySerializer, CommentSerializer,
     GenreSerializer, ReviewSerializer,
     TitleSerializer, TokenSerializer,
     SignupSerializer, AuthSerializer,
-    MeSerializer)
+    UserSerializer, UserNotAdminSerializer)
 
 
-User = get_user_model()
-
-
-class MeViewSet(viewsets.ViewSet):
+class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
-    serializer_class = MeSerializer
-    permission_classes = (IsOwner,)
+    serializer_class = UserSerializer
+    permission_classes = (IsAdmin, )
     authentication_classes = (CustomAuthentication, )
+    lookup_field = 'username'
+    search_fields = ('user__username', )
 
-    def partial_update(self, request, *args, **kwargs):
-        user = get_object_or_404(User, pk=request.user.pk)
-        serializer = MeSerializer(data=request.data, partial=True)
-        if serializer.is_valid():
+    @action(
+        methods=['GET', 'PATCH'],
+        permission_classes=(permissions.IsAuthenticated, ),
+        detail=False,
+        url_name='me',
+        url_path='me'
+    )
+    def me(self, request):
+        user = get_object_or_404(User, username=self.request.user)
+        if request.method == 'GET':
+            serializer = UserNotAdminSerializer(user)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        if request.method == 'PATCH':
+            serializer = UserNotAdminSerializer(
+                user, data=request.data, partial=True
+            )
+            serializer.is_valid(raise_exception=True)
             serializer.save()
-            return JsonResponse({'ok': 'ok'})
-        return JsonResponse({'fail': 'fail'})
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 @csrf_exempt
@@ -83,6 +100,8 @@ def get_token(request):
             return JsonResponse(Error.USER_DOES_NOT_EXIST)
         return JsonResponse(Error.WRONG_DATA)
     return JsonResponse(Error.METHOD_NOT_ALLOWED)
+
+
 class GenreViewSet(viewsets.ModelViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
@@ -93,7 +112,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
     serializer_class = CategorySerializer
 
 
-class TitleFilter(viewsets.ModelViewSet):
+class TitleFilter(filters.FilterSet):
     genre = CharFilter(field_name='genre__slug',
                        lookup_expr='icontains')
     category = CharFilter(field_name='category__slug',
@@ -125,6 +144,17 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user, title=self.get_title())
+    
+    def validate(self, data):
+        request = self.context['request']
+        if request.method != 'POST':
+            return data
+        author = self.request.user
+        title_id = self.context['request'].parser_context['kwargs']['title_id']
+        if Review.objects.filter(title_id=title_id,author=author).exists():
+            raise ValueError('Нельзя добовлять более одного отзыва.')
+        return data
+
 
 
 class CommentViewSet(viewsets.ModelViewSet):

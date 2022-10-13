@@ -1,11 +1,9 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
+from rest_framework.validators import UniqueTogetherValidator
 
-from reviews.models import Genre, Category, Title, Comment, Review
-from .models import Token
-
-
-User = get_user_model()
+from reviews.models import Genre, Category, Title, Comment, Review, User
+from reviews.models import Token
 
 
 class TokenSerializer(serializers.ModelSerializer):
@@ -14,10 +12,25 @@ class TokenSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class MeSerializer(serializers.ModelSerializer):
+class UserSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = User
-        fields = ['first_name', 'last_name']
+        fields = (
+            'username', 'email', 'first_name',
+            'last_name', 'bio', 'role'
+        )
+        lookup_field = 'username'
+
+
+class UserNotAdminSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = ('username', 'email', 'first_name',
+                  'last_name', 'bio')
+        read_only_fields = ('role', )
+        lookup_field = 'username'
 
 
 class AuthSerializer(serializers.Serializer):
@@ -28,6 +41,10 @@ class AuthSerializer(serializers.Serializer):
 class SignupSerializer(serializers.Serializer):
     username = serializers.CharField(required=True)
     email = serializers.EmailField(required=True)
+
+    class Meta:
+        fields = ('email', 'username', 'confirmation_code')
+        model = User
 
 
 class GenreSerializer(serializers.ModelSerializer):
@@ -78,7 +95,7 @@ class CommentSerializer(serializers.ModelSerializer):
     )
 
     class Meta:
-        exclude = ['review_id', ]
+        exclude = ['review', ]
         model = Comment
     read_only_fields = ('title')
 
@@ -88,6 +105,6 @@ class ReviewSerializer(serializers.ModelSerializer):
     )
 
     class Meta:
-        exclude = ['title_id', ]
+        exclude = ['title', ]
         model = Review
     read_only_fields = ('title', 'review')

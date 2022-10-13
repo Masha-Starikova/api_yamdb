@@ -1,10 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import authentication, exceptions
 
-from api.models import Token
-
-
-User = get_user_model()
+from reviews.models import Token, User
 
 
 class CustomAuthentication(authentication.BaseAuthentication):

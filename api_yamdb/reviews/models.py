@@ -1,3 +1,6 @@
+from enum import unique
+import re
+from tabnanny import verbose
 from django.db import models
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.contrib.auth.models import AbstractUser
@@ -10,7 +13,40 @@ class User(AbstractUser):
         ('user', 'user')
     )
     role = models.CharField(max_length=20, choices=ROLES, default='user')
-    #bio=
+    bio = models.TextField('Биография', blank=True)
+    confirmation_code = models.CharField(max_length=4, null=False, blank=False, default='----')
+    username = models.CharField(max_length=150, unique=True, null=False, blank=False)
+    email = models.EmailField(max_length=254, unique=True, null=False, blank=False)
+    first_name =  models.CharField(max_length=150, blank=True)
+    last_name =  models.CharField(max_length=150, blank=True)
+
+    class Meta:
+        ordering = ('id', )
+        verbose_name = 'Пользователь'
+        verbose_name_plural = 'Пользователи'
+    
+    REQUIRED_FIELDS = ['email']
+    USERNAME_FIELD = 'username'
+
+    def __str__(self):
+        return self.username
+    
+    @property
+    def is_admin(self):
+        return self.role == 'admin' or self.is_superuser
+
+    @property
+    def is_moderator(self):
+        return self.role == 'moderator'
+
+    @property
+    def is_user(self):
+        return self.role == 'user'
+
+class Token(models.Model):
+    token = models.CharField(max_length=32, null=True, default=None)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, unique=True)
+    confirmation_code = models.CharField(max_length=4, null=False, blank=False, default='----')
 
 
 class Genre(models.Model):
@@ -108,7 +144,7 @@ class Review(models.Model):
     pub_date = models.DateTimeField(
         'Дата публикации', auto_now_add=True, blank=True
     )
-    title_id = models.ForeignKey(
+    title = models.ForeignKey(
         Title, on_delete=models.CASCADE,
         related_name='reviews', blank=True
     )
@@ -130,7 +166,7 @@ class Comment(models.Model):
     pub_date = models.DateTimeField(
         'Дата публикации', auto_now_add=True, blank=True
     )
-    review_id = models.ForeignKey(
+    review = models.ForeignKey(
         Review, on_delete=models.CASCADE,
         related_name='comments', blank=True
     )
