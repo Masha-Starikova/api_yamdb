@@ -1,5 +1,7 @@
 from django.db.models import Avg
 import json
+from django.views.decorators.csrf import csrf_exempt
+from api.services import create_user, update_token
 
 from django.contrib.auth import get_user_model
 from django.http import JsonResponse
@@ -8,58 +10,28 @@ from django_filters import CharFilter
 from rest_framework import viewsets
 from reviews.models import Category, Genre, Review, Title
 from django_filters.rest_framework import DjangoFilterBackend
-
-from api.serializers import (CategorySerializer, CommentSerializer,
-                             GenreSerializer, ReviewSerializer,
-                             TitleSerializer)
-
-
-class GenreViewSet(viewsets.ModelViewSet):
-    queryset = Genre.objects.all()
-    serializer_class = GenreSerializer
-
-
-class CategoryViewSet(viewsets.ModelViewSet):
-    queryset = Category.objects.all()
-    serializer_class = CategorySerializer
-
-
-class TitleFilter(viewsets.ModelViewSet):
-    genre = CharFilter(field_name='genre__slug',
-                       lookup_expr='icontains')
-    category = CharFilter(field_name='category__slug',
-                          lookup_expr='icontains')
-    name = CharFilter(field_name='name',
-                      lookup_expr='icontains')
-from django.views.decorators.csrf import csrf_exempt
-    class Meta:
-        model = Title
-        fields = ['year']
-
+from api.permissions import IsAdmin, IsModerator, IsOwner
 from api.authenticaton import CustomAuthentication
 from api.models import Token
 from api.errors import Error
+
 from api.serializers import (
-    CommentSerializer,
-    ReviewSerializer,
-    TokenSerializer,
-    SignupSerializer,
-    AuthSerializer,
-    MeSerializer
-)
-from api.permissions import IsAdmin, IsModerator, IsOwner
-from api.services import create_user, update_token
-from reviews.models import Review, Title
+    CategorySerializer, CommentSerializer,
+    GenreSerializer, ReviewSerializer,
+    TitleSerializer, TokenSerializer,
+    SignupSerializer, AuthSerializer,
+    MeSerializer)
 
 
 User = get_user_model()
 
 
-class Me(viewsets.ViewSet):
+class MeViewSet(viewsets.ViewSet):
     queryset = User.objects.all()
     serializer_class = MeSerializer
     permission_classes = (IsOwner,)
-    authentication_classes = (CustomAuthentication,)
+    authentication_classes = (CustomAuthentication, )
+
     def partial_update(self, request, *args, **kwargs):
         user = get_object_or_404(User, pk=request.user.pk)
         serializer = MeSerializer(data=request.data, partial=True)
@@ -111,19 +83,48 @@ def get_token(request):
             return JsonResponse(Error.USER_DOES_NOT_EXIST)
         return JsonResponse(Error.WRONG_DATA)
     return JsonResponse(Error.METHOD_NOT_ALLOWED)
+class GenreViewSet(viewsets.ModelViewSet):
+    queryset = Genre.objects.all()
+    serializer_class = GenreSerializer
+
+
+class CategoryViewSet(viewsets.ModelViewSet):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+
+
+class TitleFilter(viewsets.ModelViewSet):
+    genre = CharFilter(field_name='genre__slug',
+                       lookup_expr='icontains')
+    category = CharFilter(field_name='category__slug',
+                          lookup_expr='icontains')
+    name = CharFilter(field_name='name',
+                      lookup_expr='icontains')
+
+    class Meta:
+        model = Title
+        fields = ['year']
+
+class TitleViewSet(viewsets.ModelViewSet):
+    queryset = Title.objects.annotate(
+        rating=Avg('reviews__score')).order_by('rating')
+    serializer_class = TitleSerializer
+    #permission_classes = (IsAdmin | IsReadOnly,)
+    filter_backends = (DjangoFilterBackend)
+    filterset_class = TitleFilter
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
 
-#    def get_title(self):
-#        return get_object_or_404(Title, pk=self.kwargs.get('title_id'))
+    def get_title(self):
+        return get_object_or_404(Title, pk=self.kwargs.get('title_id'))
 
-#    def get_queryset(self):
-#        return self.get_title().reviews
+    def get_queryset(self):
+        return self.get_title().reviews
 
-#    def perform_create(self, serializer):
-#        serializer.save(author=self.request.user, title=self.get_title())
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user, title=self.get_title())
 
 
 class CommentViewSet(viewsets.ModelViewSet):

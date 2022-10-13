@@ -10,6 +10,7 @@ class User(AbstractUser):
         ('user', 'user')
     )
     role = models.CharField(max_length=20, choices=ROLES, default='user')
+    #bio=
 
 
 class Genre(models.Model):
