@@ -1,5 +1,7 @@
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from rest_framework import serializers
+from django.shortcuts import get_object_or_404
 
 from reviews.models import Genre, Category, Title, Comment, Review
 from reviews.models import Token
@@ -17,7 +19,8 @@ class TokenSerializer(serializers.ModelSerializer):
 class MeSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['first_name', 'last_name']
+        fields = '__all__'
+        lookup_field = 'username'
 
     def update_user_data(self, validated_data, user):
         for k, v in validated_data.items():
@@ -74,8 +77,8 @@ class TitleSerializer(serializers.ModelSerializer):
     rating = serializers.IntegerField(read_only=True, required=False)
 
     class Meta:
-        fields = '__all__'
         model = Title
+        fields = '__all__'
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -84,16 +87,27 @@ class CommentSerializer(serializers.ModelSerializer):
     )
 
     class Meta:
-        exclude = ['review_id', ]
         model = Comment
-    read_only_fields = ('title')
+        exclude = ['review' ]
+        read_only_fields = ('title')
+
 
 class ReviewSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(
         read_only=True, slug_field='username'
     )
 
+    def validate(self, data):
+        request = self.context['request']
+        author = request.user
+        title_id = self.context['view'].kwargs.get('title_id')
+        title = get_object_or_404(Title, pk=title_id)
+        if request.method == 'POST':
+            if Review.objects.filter(title=title, author=author).exists():
+                raise ValidationError('Нельзя добовлять более одного отзыва.')
+        return data
+
     class Meta:
-        exclude = ['title_id', ]
         model = Review
-    read_only_fields = ('title', 'review')
+        exclude = ['title', ]
+        read_only_fields = ('title', 'review')
