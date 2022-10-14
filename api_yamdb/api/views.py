@@ -12,7 +12,6 @@ from reviews.models import Category, Genre, Review, Title
 from django_filters.rest_framework import DjangoFilterBackend
 from api.permissions import IsAdmin, IsModerator, IsOwner
 from api.authenticaton import CustomAuthentication
-from api.models import Token
 from api.errors import Error
 
 from api.serializers import (
@@ -20,7 +19,7 @@ from api.serializers import (
     GenreSerializer, ReviewSerializer,
     TitleSerializer, TokenSerializer,
     SignupSerializer, AuthSerializer,
-    MeSerializer)
+    MeSerializer), Token
 
 
 User = get_user_model()
@@ -36,9 +35,9 @@ class MeViewSet(viewsets.ViewSet):
         user = get_object_or_404(User, pk=request.user.pk)
         serializer = MeSerializer(data=request.data, partial=True)
         if serializer.is_valid():
-            serializer.save()
-            return JsonResponse({'ok': 'ok'})
-        return JsonResponse({'fail': 'fail'})
+            serializer.update_user_data(serializer.validated_data, user)
+            return JsonResponse({'ok': 'data was updated'})
+        return JsonResponse(Error.WRONG_DATA)
 
 
 @csrf_exempt
