@@ -8,7 +8,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django_filters import CharFilter
 from rest_framework import viewsets
-from reviews.models import Category, Genre, Review, Title
+from reviews.models import Category, Genre, Review, Title, Token
 from django_filters.rest_framework import DjangoFilterBackend
 from api.permissions import IsAdmin, IsModerator, IsOwner
 from api.authenticaton import CustomAuthentication
