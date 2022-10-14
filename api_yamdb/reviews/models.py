@@ -14,11 +14,7 @@ class User(AbstractUser):
     )
     role = models.CharField(max_length=20, choices=ROLES, default='user')
     bio = models.TextField('Биография', blank=True)
-    confirmation_code = models.CharField(max_length=4, null=False, blank=False, default='----')
-    username = models.CharField(max_length=150, unique=True, null=False, blank=False)
-    email = models.EmailField(max_length=254, unique=True, null=False, blank=False)
-    first_name =  models.CharField(max_length=150, blank=True)
-    last_name =  models.CharField(max_length=150, blank=True)
+
 
     class Meta:
         ordering = ('id', )

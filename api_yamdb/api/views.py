@@ -2,7 +2,7 @@ from django.db.models import Avg
 import json
 from django.views.decorators.csrf import csrf_exempt
 from api.services import create_user, update_token
-from rest_framework import permissions
+from rest_framework import permissions, pagination
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -14,7 +14,7 @@ from django_filters import CharFilter
 from rest_framework import viewsets
 from reviews.models import Category, Genre, Review, Title, Token
 from django_filters.rest_framework import DjangoFilterBackend
-from api.permissions import IsAdmin, IsModerator, IsOwner
+from api.permissions import IsAdmin, IsModerator, IsOwner, IsAdminModeratorAuthorOrReadOnly
 from api.authenticaton import CustomAuthentication
 from api.errors import Error
 from django_filters import rest_framework as filters
@@ -32,14 +32,16 @@ from api.serializers import (
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = (IsAdmin, )
     authentication_classes = (CustomAuthentication, )
+    permission_classes=(IsAdmin,)
+    pagination_class = pagination.LimitOffsetPagination
     lookup_field = 'username'
-    search_fields = ('user__username', )
+    search_fields = ('username', )
+    
 
     @action(
         methods=['GET', 'PATCH'],
-        permission_classes=(permissions.IsAuthenticated, ),
+        permission_classes=(permissions.IsAuthenticated,),
         detail=False,
         url_name='me',
         url_path='me'
@@ -47,10 +49,10 @@ class UserViewSet(viewsets.ModelViewSet):
     def me(self, request):
         user = get_object_or_404(User, username=self.request.user)
         if request.method == 'GET':
-            serializer = UserNotAdminSerializer(user)
+            serializer = UserSerializer(user)
             return Response(serializer.data, status=status.HTTP_200_OK)
         if request.method == 'PATCH':
-            serializer = UserNotAdminSerializer(
+            serializer =UserSerializer(
                 user, data=request.data, partial=True
             )
             serializer.is_valid(raise_exception=True)
@@ -58,22 +60,64 @@ class UserViewSet(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-@csrf_exempt
-def signup(request):
-    if request.method == 'POST':
-        serializer = SignupSerializer(data=json.loads(request.body))
+class SignupViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
+    queryset = User.objects.all()
+    serializer_class =  SignupSerializer
+
+    def perform_create(self, serializer):
+        username = serializer.data.get('username')
+        email = serializer.data.get('email')
+        serializer.save(username=username, email=email)
+
+    @action(
+        methods=['POST',],
+        detail=False,
+        url_name='signup',
+        url_path='signup'
+    )
+
+    def signup(self, request):
+        if request.method == 'POST':
+            serializer = SignupSerializer(data=json.loads(request.body))
         
-        if serializer.is_valid():
-            username = serializer.data.get('username')
-            email = serializer.data.get('email')
-            if create_user(username, email):
-                return JsonResponse(
-                    {'success': f'user {username} created'},
-                    status=200
-                )
-            return JsonResponse(Error.USER_OR_EMAIL_EXIST, status=400)
-        return JsonResponse(Error.WRONG_DATA)
-    return JsonResponse(Error.METHOD_NOT_ALLOWED)
+            if serializer.is_valid():
+                username = serializer.data.get('username')
+                email = serializer.data.get('email')
+                if create_user(username, email):
+                    return JsonResponse(
+                        {'success': f'user {username} created'},
+                        status=200
+                    )
+                return JsonResponse(Error.USER_OR_EMAIL_EXIST, status=400)
+            return JsonResponse(Error.WRONG_DATA)
+        return JsonResponse(Error.METHOD_NOT_ALLOWED)
+
+
+class AuthViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
+    queryset = User.objects.all()
+    serializer_class = AuthSerializer
+
+    @action(
+        methods=['POST',],
+        detail=False,
+        url_name='token',
+        url_path='token'
+    )
+
+    def get_token(request):
+        if request.method == 'POST':
+            serializer = AuthSerializer(data=json.loads(request.body))
+            if serializer.is_valid():
+                username = serializer.data.get('username')
+                confirmation_code = serializer.data.get('confirmation_code')
+
+                if User.objects.filter(username=username).exists():
+                    token = update_token(username, confirmation_code)
+                    if token is not None:
+                        return JsonResponse({'token': token})
+                return JsonResponse(Error.USER_DOES_NOT_EXIST)
+            return JsonResponse(Error.WRONG_DATA)
+        return JsonResponse(Error.METHOD_NOT_ALLOWED)
 
 
 #this view for tests
@@ -83,23 +127,6 @@ class TokenViewSet(viewsets.ModelViewSet):
     http_method_names = ['get']
     authentication_classes = (CustomAuthentication, )
     permission_classes = (IsAdmin, )
-
-
-@csrf_exempt
-def get_token(request):
-    if request.method == 'POST':
-        serializer = AuthSerializer(data=json.loads(request.body))
-        if serializer.is_valid():
-            username = serializer.data.get('username')
-            confirmation_code = serializer.data.get('confirmation_code')
-
-            if User.objects.filter(username=username).exists():
-                token = update_token(username, confirmation_code)
-                if token is not None:
-                    return JsonResponse({'token': token})
-            return JsonResponse(Error.USER_DOES_NOT_EXIST)
-        return JsonResponse(Error.WRONG_DATA)
-    return JsonResponse(Error.METHOD_NOT_ALLOWED)
 
 
 class GenreViewSet(viewsets.ModelViewSet):
@@ -135,6 +162,10 @@ class TitleViewSet(viewsets.ModelViewSet):
 
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
+    permission_classes = [
+        IsAdminModeratorAuthorOrReadOnly,
+        permissions.IsAuthenticatedOrReadOnly
+    ]
 
     def get_title(self):
         return get_object_or_404(Title, pk=self.kwargs.get('title_id'))
@@ -159,12 +190,15 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
-
-    def get_review(self):
-        return get_object_or_404(Review, pk=self.kwargs.get('review_id'))
+    permission_classes = [IsAdminModeratorAuthorOrReadOnly]
 
     def get_queryset(self):
-        return self.get_review().comments
+        return get_object_or_404(
+            Review, pk=self.kwargs.get('review_id')
+        ).comments.all()
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user, review=self.get_review())
+        title_id = self.kwargs.get('title_id')
+        review_id = self.kwargs.get('review_id')
+        review = get_object_or_404(Review, id=review_id, title=title_id)
+        serializer.save(author=self.request.user, review=review)

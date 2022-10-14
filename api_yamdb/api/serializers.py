@@ -1,4 +1,5 @@
-from django.contrib.auth import get_user_model
+from xml.dom import ValidationErr
+from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
@@ -13,6 +14,18 @@ class TokenSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
+
+    def create(self, validated_data):
+        return User.objects.create(**validated_data, is_active=0)
+
+    def update(self, instance, validated_data):
+        instance.username = validated_data.get('username', instance.username)
+        instance.email = validated_data.get('email', instance.email)
+        instance.first_name = validated_data.get('first_name', instance.first_name)
+        instance.last_name = validated_data.get('last_name', instance.last_name)
+        instance.bio = validated_data.get('bio', instance.bio)
+        instance.save()
+        return instance
 
     class Meta:
         model = User
@@ -36,6 +49,10 @@ class UserNotAdminSerializer(serializers.ModelSerializer):
 class AuthSerializer(serializers.Serializer):
     username = serializers.CharField(required=True)
     confirmation_code = serializers.CharField(max_length=4, required=True)
+
+    class Meta:
+        fields = ('username', 'confirmation_code')
+        model = User
 
 
 class SignupSerializer(serializers.Serializer):
@@ -99,10 +116,21 @@ class CommentSerializer(serializers.ModelSerializer):
         model = Comment
     read_only_fields = ('title')
 
+
 class ReviewSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(
         read_only=True, slug_field='username'
     )
+
+    def validate(self, data):
+        request = self.context['request']
+        author = request.user
+        title_id = self.context['view'].kwargs.get('title_id')
+        title = get_object_or_404(Title, pk=title_id)
+        if request.method == 'POST':
+            if Review.objects.filter(title=title, author=author).exists():
+                raise ValidationErr('Нельзя добовлять более одного отзыва.')
+        return data
 
     class Meta:
         exclude = ['title', ]
