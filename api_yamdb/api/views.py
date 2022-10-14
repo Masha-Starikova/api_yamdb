@@ -19,7 +19,7 @@ from api.serializers import (
     GenreSerializer, ReviewSerializer,
     TitleSerializer, TokenSerializer,
     SignupSerializer, AuthSerializer,
-    MeSerializer), Token
+    MeSerializer)
 
 
 User = get_user_model()
