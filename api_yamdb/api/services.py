@@ -5,7 +5,7 @@ from django.core.mail import send_mail
 from django.db.models import Q
 from django.utils.crypto import get_random_string
 
-from api.models import Token
+from reviews.models import Token
 
 
 User = get_user_model()

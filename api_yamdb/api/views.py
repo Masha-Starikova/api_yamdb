@@ -7,13 +7,13 @@ from django.contrib.auth import get_user_model
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django_filters import CharFilter
-from rest_framework import viewsets
-from reviews.models import Category, Genre, Review, Title
+from rest_framework import viewsets, permissions
+from reviews.models import Category, Genre, Review, Title, Token
 from django_filters.rest_framework import DjangoFilterBackend
-from api.permissions import IsAdmin, IsModerator, IsOwner
+from api.permissions import IsAdmin, IsModerator, IsOwner, IsAdminModeratorAuthorOrReadOnly
 from api.authenticaton import CustomAuthentication
-from api.models import Token
 from api.errors import Error
+from django_filters import rest_framework as filters
 
 from api.serializers import (
     CategorySerializer, CommentSerializer,
@@ -31,14 +31,15 @@ class MeViewSet(viewsets.ViewSet):
     serializer_class = MeSerializer
     permission_classes = (IsOwner,)
     authentication_classes = (CustomAuthentication, )
+    lookup_field = 'username'
 
     def partial_update(self, request, *args, **kwargs):
         user = get_object_or_404(User, pk=request.user.pk)
         serializer = MeSerializer(data=request.data, partial=True)
         if serializer.is_valid():
-            serializer.save()
-            return JsonResponse({'ok': 'ok'})
-        return JsonResponse({'fail': 'fail'})
+            serializer.update_user_data(serializer.validated_data, user)
+            return JsonResponse({'ok': 'data was updated'})
+        return JsonResponse(Error.WRONG_DATA)
 
 
 @csrf_exempt
@@ -91,9 +92,10 @@ class GenreViewSet(viewsets.ModelViewSet):
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
+    authentication_classes = (CustomAuthentication, )
 
 
-class TitleFilter(viewsets.ModelViewSet):
+class TitleFilter(filters.FilterSet):
     genre = CharFilter(field_name='genre__slug',
                        lookup_expr='icontains')
     category = CharFilter(field_name='category__slug',
@@ -105,17 +107,27 @@ class TitleFilter(viewsets.ModelViewSet):
         model = Title
         fields = ['year']
 
+
 class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.annotate(
         rating=Avg('reviews__score')).order_by('rating')
     serializer_class = TitleSerializer
+<<<<<<< HEAD
     permission_classes = (IsAdmin, IsModerator, IsOwner,)
+=======
+    authentication_classes = (CustomAuthentication, )
+    permission_classes = (IsAdmin, )
+>>>>>>> Dev
     filter_backends = (DjangoFilterBackend)
     filterset_class = TitleFilter
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
+    permission_classes = [
+        IsAdminModeratorAuthorOrReadOnly,
+        permissions.IsAuthenticatedOrReadOnly
+    ]
 
     def get_title(self):
         return get_object_or_404(Title, pk=self.kwargs.get('title_id'))
@@ -125,16 +137,30 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user, title=self.get_title())
+    
+    def validate(self, data):
+        request = self.context['request']
+        if request.method != 'POST':
+            return data
+        author = self.request.user
+        title_id = self.context['request'].parser_context['kwargs']['title_id']
+        if Review.objects.filter(title_id=title_id,author=author).exists():
+            raise ValueError('Нельзя добовлять более одного отзыва.')
+        return data
 
 
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
-
-    def get_review(self):
-        return get_object_or_404(Review, pk=self.kwargs.get('review_id'))
+    permission_classes = [IsAdminModeratorAuthorOrReadOnly]
+    authentication_classes = (CustomAuthentication, )
 
     def get_queryset(self):
-        return self.get_review().comments
+        return get_object_or_404(
+            Review, pk=self.kwargs.get('review_id')
+        ).comments.all()
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user, review=self.get_review())
+        title_id = self.kwargs.get('title_id')
+        review_id = self.kwargs.get('review_id')
+        review = get_object_or_404(Review, id=review_id, title=title_id)
+        serializer.save(author=self.request.user, review=review)
