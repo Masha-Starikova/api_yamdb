@@ -5,6 +5,9 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import viewsets
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
 
 from api.authenticaton import CustomAuthentication
 from api.errors import Error
@@ -38,13 +41,34 @@ class Me(viewsets.ViewSet):
         return JsonResponse(Error.WRONG_DATA)
 
 
+class Signup1(APIView):
+    def post(self, request):
+        print(dir(request))
+        serializer = SignupSerializer(data=request.data)
+        if serializer.is_valid():
+            username = serializer.data.get('username')
+            if username == 'me':
+                return JsonResponse(Error.INVALID_USERNAME, status=400)
+            email = serializer.data.get('email')
+            if create_user(username, email):
+                return Response(
+                    serializer.data,
+                    status=200
+                )
+            return JsonResponse(Error.USER_OR_EMAIL_EXIST, status=400)
+        return JsonResponse(Error.WRONG_DATA, status=400)
+
+
 @csrf_exempt
 def signup(request):
     if request.method == 'POST':
+        print(dir(request))
         serializer = SignupSerializer(data=json.loads(request.body))
-        
+          
         if serializer.is_valid():
             username = serializer.data.get('username')
+            if username == 'me':
+                return JsonResponse(Error.INVALID_USERNAME, status=400)
             email = serializer.data.get('email')
             if create_user(username, email):
                 return JsonResponse(
@@ -63,6 +87,21 @@ class TokenViewSet(viewsets.ModelViewSet):
     http_method_names = ['get']
     authentication_classes = (CustomAuthentication, )
     permission_classes = (IsAdmin, )
+
+
+class GetToken(APIView):
+    def post(self, request):
+        serializer = AuthSerializer(data=request.data)
+        if serializer.is_valid():
+            username = serializer.data.get('username')
+            get_object_or_404(User, username=request.user.username)
+            confirmation_code = serializer.data.get('confirmation_code')
+            if User.objects.filter(username=username).exists():
+                token = update_token(username, confirmation_code)
+                if token is not None:
+                    return JsonResponse({'token': token})
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
 @csrf_exempt

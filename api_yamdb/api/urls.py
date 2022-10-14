@@ -5,6 +5,7 @@ from rest_framework_simplejwt.views import (
 )
 from rest_framework import routers
 from api.views import CommentViewSet, ReviewViewSet, TokenViewSet, get_token, signup, Me
+from api.views import Signup1, GetToken
 
 
 v1_router = routers.DefaultRouter()
@@ -24,7 +25,8 @@ urlpatterns = [
     # path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     # path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('v1/', include(v1_router.urls)),
-    path('v1/get_token/', get_token),
-    path('v1/signup/', signup),
-    path('v1/me/', Me.as_view({'patch': 'partial_update'}))
+    path('v1/auth/token/', GetToken.as_view()),
+    # path('v1/auth/signup/', signup),
+    path('v1/users/me/', Me.as_view({'patch': 'partial_update'})),
+    path('v1/auth/signup/', Signup1.as_view())
 ]
