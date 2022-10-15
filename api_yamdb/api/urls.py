@@ -2,10 +2,11 @@ from django.urls import path, include
 
 from rest_framework import routers
 from api.views import CommentViewSet, ReviewViewSet, TokenViewSet, Me
-from api.views import Signup1, GetToken
+from api.views import Signup1, GetToken, UserViewSet
 
 
 v1_router = routers.DefaultRouter()
+v1_router.register('users', UserViewSet)
 v1_router.register('token', TokenViewSet)
 v1_router.register(
     r'titles/(?P<title_id>\d+)/reviews',

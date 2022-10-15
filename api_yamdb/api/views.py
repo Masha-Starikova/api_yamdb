@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
-from rest_framework import viewsets
+from rest_framework import viewsets,  pagination
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -13,7 +13,7 @@ from api.serializers import (
     TokenSerializer,
     SignupSerializer,
     AuthSerializer,
-    MeSerializer
+    MeSerializer, UserSerializer
 )
 from api.permissions import IsAdmin, IsModerator, IsOwner
 from api.services import create_user, update_token
@@ -21,6 +21,15 @@ from reviews.models import Review, Title, Token
 
 
 User = get_user_model()
+
+
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    authentication_classes = (CustomAuthentication, )
+    permission_classes=(IsAdmin,)
+    pagination_class = pagination.LimitOffsetPagination
+    lookup_field = 'username'
 
 
 class Me(viewsets.ViewSet):

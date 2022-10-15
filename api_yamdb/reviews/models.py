@@ -10,7 +10,7 @@ class User(AbstractUser):
         ('user', 'user')
     )
     role = models.CharField(max_length=20, choices=ROLES, default='user')
-
+    bio = models.TextField('Биография', blank=True)
 
 class Token(models.Model):
     token = models.CharField(max_length=32, null=True, default=None)
