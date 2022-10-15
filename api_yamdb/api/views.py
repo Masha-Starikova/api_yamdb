@@ -35,7 +35,7 @@ class UserViewSet(viewsets.ModelViewSet):
     lookup_field = 'username'
 
 
-class MeView(viewsets.ViewSet):
+class MeViewSet(viewsets.ViewSet):
     queryset = User.objects.all()
     serializer_class = MeSerializer
     permission_classes = (IsOwner,)
