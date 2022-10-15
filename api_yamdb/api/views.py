@@ -31,7 +31,6 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     authentication_classes = (CustomAuthentication, )
     permission_classes=(IsAdmin,)
-    pagination_class = pagination.LimitOffsetPagination
     lookup_field = 'username'
 
 
@@ -99,7 +98,6 @@ class GenreViewSet(viewsets.ModelViewSet):
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    authentication_classes = (CustomAuthentication, )
 
 
 class TitleFilter(filters.FilterSet):
@@ -119,9 +117,7 @@ class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.annotate(
         rating=Avg('reviews__score')).order_by('rating')
     serializer_class = TitleSerializer
-    authentication_classes = (CustomAuthentication, )
-    permission_classes = (IsAdmin, )
-    filter_backends = (DjangoFilterBackend)
+    permission_classes = (IsOwner, )
     filterset_class = TitleFilter
 
 

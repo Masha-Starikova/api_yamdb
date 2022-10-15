@@ -11,17 +11,22 @@ User = get_user_model()
 
 
 class UserSerializer(serializers.ModelSerializer):
-    
-    def create(self, validated_data):
-        return User.objects.create(**validated_data, is_active=0)
+    username = serializers.CharField(required=True)
+    email = serializers.CharField(required=True)
+    role = serializers.StringRelatedField(read_only=True)
 
     class Meta:
         model = User
         fields = (
-            'username', 'email', 'first_name',
-            'last_name', 'bio', 'role'
+            'username', 'email', 'first_name', 'last_name', 'bio', 'role',
         )
-        lookup_field = 'username'
+
+    def validate_username(self, value):
+        if value == 'me':
+            raise serializers.ValidationError(
+                'Имя пользователя "me" не разрешено.'
+            )
+        return value
 
 
 class TokenSerializer(serializers.ModelSerializer):
@@ -34,7 +39,6 @@ class MeSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = '__all__'
-        lookup_field = 'username'
 
     def update_user_data(self, validated_data, user):
         for k, v in validated_data.items():
