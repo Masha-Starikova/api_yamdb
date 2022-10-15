@@ -1,14 +1,20 @@
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
-from rest_framework import viewsets,  pagination
+from django.db.models import Avg
+from django_filters import CharFilter
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import viewsets,  pagination, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
+
 from api.authenticaton import CustomAuthentication
 from api.errors import Error
+from api.permissions import IsAdmin, IsOwner, IsAdminModeratorAuthorOrReadOnly
+from api.services import create_user, update_token
 from django_filters import rest_framework as filters
-
+from reviews.models import Token, Genre, Category, Title, Review
 from api.serializers import (
     CategorySerializer, CommentSerializer,
     GenreSerializer, ReviewSerializer,
@@ -29,13 +35,11 @@ class UserViewSet(viewsets.ModelViewSet):
     lookup_field = 'username'
 
 
-class MeViewSet(viewsets.ViewSet):
+class MeView(viewsets.ViewSet):
     queryset = User.objects.all()
     serializer_class = MeSerializer
     permission_classes = (IsOwner,)
-    authentication_classes = (CustomAuthentication, )
-    lookup_field = 'username'
-
+    authentication_classes = (CustomAuthentication,)
     
     def retrieve(self, request, pk=None):
         return Response({'1': '1'})
@@ -85,6 +89,8 @@ class GetToken(APIView):
             if token is not None:
                 return Response({'token': token})
         return Response(status=status.HTTP_400_BAD_REQUEST)
+
+
 class GenreViewSet(viewsets.ModelViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer

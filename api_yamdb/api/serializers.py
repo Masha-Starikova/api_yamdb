@@ -11,7 +11,7 @@ User = get_user_model()
 
 
 class UserSerializer(serializers.ModelSerializer):
-
+    
     def create(self, validated_data):
         return User.objects.create(**validated_data, is_active=0)
 

@@ -5,8 +5,9 @@ from api.views import (
     GenreViewSet, CategoryViewSet, 
     TitleViewSet, CommentViewSet, 
     ReviewViewSet, TokenViewSet,
-    Me
-from api.views import Signup1, GetToken, UserViewSetViewSet)
+    MeViewSet
+)
+from api.views import Signup1, GetToken, UserViewSet
 
 
 v1_router = routers.DefaultRouter()
@@ -15,6 +16,7 @@ v1_router.register('categories', CategoryViewSet, basename='categories')
 v1_router.register('titles', TitleViewSet, basename='titles')
 #v1_router.register('me', MeViewSet, basename='me')
 v1_router.register('token', TokenViewSet)
+v1_router.register('users', UserViewSet)
 v1_router.register(
     r'titles/(?P<title_id>\d+)/reviews',
     ReviewViewSet,

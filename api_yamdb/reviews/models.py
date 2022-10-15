@@ -12,6 +12,7 @@ class User(AbstractUser):
     role = models.CharField(max_length=20, choices=ROLES, default='user')
     bio = models.TextField('Биография', blank=True)
 
+
 class Token(models.Model):
     token = models.CharField(max_length=32, null=True, default=None)
     user = models.OneToOneField(User, on_delete=models.CASCADE, unique=True)
