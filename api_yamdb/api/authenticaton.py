@@ -8,6 +8,9 @@ User = get_user_model()
 
 
 class CustomAuthentication(authentication.BaseAuthentication):
+    def authenticate_header(self, request):
+        return 'WWW-Authenticate'
+
     def authenticate(self, request):
         token = request.META.get('HTTP_AUTHORIZATION')
         if token is not None:
@@ -15,5 +18,5 @@ class CustomAuthentication(authentication.BaseAuthentication):
                 user = Token.objects.get(token=token).user
                 return (user, None)
             except Token.DoesNotExist:
-                raise exceptions.AuthenticationFailed('No such user or token is invalid')
-        return None
+                raise exceptions.AuthenticationFailed()
+        raise exceptions.AuthenticationFailed()

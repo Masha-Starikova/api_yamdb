@@ -1,16 +1,10 @@
-from django.db.models import Avg
-import json
-from django.views.decorators.csrf import csrf_exempt
-from api.services import create_user, update_token
-
 from django.contrib.auth import get_user_model
-from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
-from django_filters import CharFilter
-from rest_framework import viewsets, permissions
-from reviews.models import Category, Genre, Review, Title, Token
-from django_filters.rest_framework import DjangoFilterBackend
-from api.permissions import IsAdmin, IsModerator, IsOwner, IsAdminModeratorAuthorOrReadOnly
+from rest_framework import viewsets,  pagination
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+
 from api.authenticaton import CustomAuthentication
 from api.errors import Error
 from django_filters import rest_framework as filters
@@ -20,10 +14,19 @@ from api.serializers import (
     GenreSerializer, ReviewSerializer,
     TitleSerializer, TokenSerializer,
     SignupSerializer, AuthSerializer,
-    MeSerializer)
+    MeSerializer, UserSerializer)
 
 
 User = get_user_model()
+
+
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    authentication_classes = (CustomAuthentication, )
+    permission_classes=(IsAdmin,)
+    pagination_class = pagination.LimitOffsetPagination
+    lookup_field = 'username'
 
 
 class MeViewSet(viewsets.ViewSet):
@@ -33,31 +36,33 @@ class MeViewSet(viewsets.ViewSet):
     authentication_classes = (CustomAuthentication, )
     lookup_field = 'username'
 
+    
+    def retrieve(self, request, pk=None):
+        return Response({'1': '1'})
+
     def partial_update(self, request, *args, **kwargs):
         user = get_object_or_404(User, pk=request.user.pk)
         serializer = MeSerializer(data=request.data, partial=True)
         if serializer.is_valid():
             serializer.update_user_data(serializer.validated_data, user)
-            return JsonResponse({'ok': 'data was updated'})
-        return JsonResponse(Error.WRONG_DATA)
+            return Response(serializer.validated_data)
+        return Response(Error.WRONG_DATA)
 
 
-@csrf_exempt
-def signup(request):
-    if request.method == 'POST':
-        serializer = SignupSerializer(data=json.loads(request.body))
-        
+class Signup1(APIView):
+    def post(self, request):
+        serializer = SignupSerializer(data=request.data)
         if serializer.is_valid():
             username = serializer.data.get('username')
+            if username == 'me':
+                return Response(status=status.HTTP_400_BAD_REQUEST)
             email = serializer.data.get('email')
             if create_user(username, email):
-                return JsonResponse(
-                    {'success': f'user {username} created'},
+                return Response(
+                    serializer.data,
                     status=200
                 )
-            return JsonResponse(Error.USER_OR_EMAIL_EXIST, status=400)
-        return JsonResponse(Error.WRONG_DATA)
-    return JsonResponse(Error.METHOD_NOT_ALLOWED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 #this view for tests
@@ -69,21 +74,17 @@ class TokenViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAdmin, )
 
 
-@csrf_exempt
-def get_token(request):
-    if request.method == 'POST':
-        serializer = AuthSerializer(data=json.loads(request.body))
-        if serializer.is_valid():
+class GetToken(APIView):
+    def post(self, request):
+        serializer = AuthSerializer(data=request.data)
+        if serializer.is_valid(raise_exception=True):
             username = serializer.data.get('username')
+            get_object_or_404(User, username=username)
             confirmation_code = serializer.data.get('confirmation_code')
-
-            if User.objects.filter(username=username).exists():
-                token = update_token(username, confirmation_code)
-                if token is not None:
-                    return JsonResponse({'token': token})
-            return JsonResponse(Error.USER_DOES_NOT_EXIST)
-        return JsonResponse(Error.WRONG_DATA)
-    return JsonResponse(Error.METHOD_NOT_ALLOWED)
+            token = update_token(username, confirmation_code)
+            if token is not None:
+                return Response({'token': token})
+        return Response(status=status.HTTP_400_BAD_REQUEST)
 class GenreViewSet(viewsets.ModelViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer

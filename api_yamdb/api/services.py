@@ -26,7 +26,7 @@ def create_user(username, email):
         new_user = User(username=username, email=email)
         new_user.set_password(User.objects.make_random_password(length=10))
         new_user.save()
-        confirmation_code=str(random.randint(1000, 9999))
+        confirmation_code= random.randint(1000, 9999)
         new_token_obj = Token(
             user=new_user,
             confirmation_code=confirmation_code

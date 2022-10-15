@@ -10,6 +10,20 @@ from reviews.models import Token
 User = get_user_model()
 
 
+class UserSerializer(serializers.ModelSerializer):
+
+    def create(self, validated_data):
+        return User.objects.create(**validated_data, is_active=0)
+
+    class Meta:
+        model = User
+        fields = (
+            'username', 'email', 'first_name',
+            'last_name', 'bio', 'role'
+        )
+        lookup_field = 'username'
+
+
 class TokenSerializer(serializers.ModelSerializer):
     class Meta:
         model = Token
@@ -31,7 +45,7 @@ class MeSerializer(serializers.ModelSerializer):
 
 class AuthSerializer(serializers.Serializer):
     username = serializers.CharField(required=True)
-    confirmation_code = serializers.CharField(max_length=4, required=True)
+    confirmation_code = serializers.IntegerField(required=True)
 
 
 class SignupSerializer(serializers.Serializer):
