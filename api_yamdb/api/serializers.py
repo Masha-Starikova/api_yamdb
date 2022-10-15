@@ -28,7 +28,7 @@ class MeSerializer(serializers.ModelSerializer):
 
 class AuthSerializer(serializers.Serializer):
     username = serializers.CharField(required=True)
-    confirmation_code = serializers.CharField(max_length=4, required=True)
+    confirmation_code = serializers.IntegerField(required=True)
 
 
 class SignupSerializer(serializers.Serializer):
