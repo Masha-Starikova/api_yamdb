@@ -9,8 +9,11 @@ class User(AbstractUser):
         ('moderator', 'moderator'),
         ('user', 'user')
     )
+    username = models.CharField(max_length=150, unique=True)
     role = models.CharField(max_length=20, choices=ROLES, default='user')
     bio = models.TextField('Биография', blank=True)
+    confirmation_code = models.IntegerField(blank=True, default=0)
+    email = models.EmailField(max_length=250, unique=True)
 
     class Meta:
         ordering = ('id', )
@@ -34,6 +37,9 @@ class User(AbstractUser):
     @property
     def is_user(self):
         return self.role == 'user'
+
+    def check_code(self, code):
+        return self.confirmation_code == code
 
 
 class Token(models.Model):

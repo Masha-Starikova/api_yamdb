@@ -25,13 +25,9 @@ def create_user(username, email):
     if not User.objects.filter(Q(username=username) | Q(email=email)).exists():
         new_user = User(username=username, email=email)
         new_user.set_password(User.objects.make_random_password(length=10))
-        new_user.save()
         confirmation_code= random.randint(1000, 9999)
-        new_token_obj = Token(
-            user=new_user,
-            confirmation_code=confirmation_code
-        )
-        new_token_obj.save()
+        new_user.confirmation_code = confirmation_code
+        new_user.save()
         send_confirmation_code(confirmation_code, email)
         return True
     return False

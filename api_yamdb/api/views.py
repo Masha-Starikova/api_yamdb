@@ -7,6 +7,7 @@ from rest_framework import viewsets,  pagination, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework_simplejwt.tokens import AccessToken
 
 from api.errors import Error
 from api.permissions import IsAdmin, IsOwner, AuthorOrAdminOrReadOnly
@@ -34,7 +35,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
 class MeViewSet(viewsets.ViewSet):
     queryset = User.objects.all()
-    serializer_class = MeSerializer
+    serializer_class = UserSerializer
     permission_classes = (IsOwner,)
 #    authentication_classes = (,)
     
@@ -43,9 +44,12 @@ class MeViewSet(viewsets.ViewSet):
 
     def partial_update(self, request, *args, **kwargs):
         user = get_object_or_404(User, pk=request.user.pk)
-        serializer = MeSerializer(data=request.data, partial=True)
+        serializer = UserSerializer(data=request.data, partial=True)
         if serializer.is_valid():
-            serializer.update_user_data(serializer.validated_data, user)
+            if 'role' in serializer.data:
+                if user.role != 'admin':
+                    return Response(status=status.HTTP_403_FORBIDDEN)
+            # serializer.update_user_data(serializer.validated_data, user)
             return Response(serializer.validated_data)
         return Response(Error.WRONG_DATA)
 
@@ -55,8 +59,6 @@ class Signup1(APIView):
         serializer = SignupSerializer(data=request.data)
         if serializer.is_valid():
             username = serializer.data.get('username')
-            if username == 'me':
-                return Response(status=status.HTTP_400_BAD_REQUEST)
             email = serializer.data.get('email')
             if create_user(username, email):
                 return Response(
@@ -72,7 +74,7 @@ class TokenViewSet(viewsets.ModelViewSet):
     queryset = Token.objects.all()
     http_method_names = ['get']
 #    authentication_classes = (, )
-    permission_classes = (IsAdmin, )
+    # permission_classes = (IsAdmin, )
 
 
 class GetToken(APIView):
@@ -80,11 +82,11 @@ class GetToken(APIView):
         serializer = AuthSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             username = serializer.data.get('username')
-            get_object_or_404(User, username=username)
+            user = get_object_or_404(User, username=username)
             confirmation_code = serializer.data.get('confirmation_code')
-            token = update_token(username, confirmation_code)
-            if token is not None:
-                return Response({'token': token})
+            if user.check_code(confirmation_code):
+                token = AccessToken.for_user(user)
+                return Response({'token': str(token)})
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
 

@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
+from requests import request
 from rest_framework import serializers
 from django.shortcuts import get_object_or_404
 
@@ -11,10 +12,6 @@ User = get_user_model()
 
 
 class UserSerializer(serializers.ModelSerializer):
-    username = serializers.CharField(required=True)
-    email = serializers.CharField(required=True)
-    role = serializers.StringRelatedField(read_only=True)
-
     class Meta:
         model = User
         fields = (
@@ -38,13 +35,21 @@ class TokenSerializer(serializers.ModelSerializer):
 class MeSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = '__all__'
+        fields = ['username', 'email', 'first_name', 'last_name', 'bio', 'role']
 
     def update_user_data(self, validated_data, user):
         for k, v in validated_data.items():
             setattr(user, k, v)
         user.save()
         return user
+
+    # def validate_role(self, value):
+    #     request = self.context.get('request')
+    #     user = request.get('user')
+    #     if user.role != value:
+    #         if user.role != 'admin':
+    #             raise ValidationError('Только админ может менять роль')
+    #     return value
 
 
 class AuthSerializer(serializers.Serializer):
@@ -55,6 +60,13 @@ class AuthSerializer(serializers.Serializer):
 class SignupSerializer(serializers.Serializer):
     username = serializers.CharField(required=True)
     email = serializers.EmailField(required=True)
+
+    def validate_username(self, value):
+        if value == 'me':
+            raise serializers.ValidationError(
+                'Имя пользователя "me" не разрешено.'
+            )
+        return value
 
 
 class GenreSerializer(serializers.ModelSerializer):
@@ -111,7 +123,7 @@ class CommentSerializer(serializers.ModelSerializer):
 
 
 class ReviewSerializer(serializers.ModelSerializer):
-    author = serializers.SlugRelatedField(
+    autor = serializers.SlugRelatedField(
         read_only=True, slug_field='username'
     )
 
@@ -121,11 +133,12 @@ class ReviewSerializer(serializers.ModelSerializer):
         title_id = self.context['view'].kwargs.get('title_id')
         title = get_object_or_404(Title, pk=title_id)
         if request.method == 'POST':
-            if Review.objects.filter(title=title, author=author).exists():
+            if Review.objects.filter(title=title, autor=author).exists():
                 raise ValidationError('Нельзя добовлять более одного отзыва.')
         return data
 
     class Meta:
         model = Review
-        exclude = ['title', ]
+        # exclude = ['title', ]
+        fields = '__all__'
         read_only_fields = ('title', 'review')
