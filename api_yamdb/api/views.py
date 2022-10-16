@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from django.db.models import Avg
-from django_filters import CharFilter
+from .filters import TitleFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets,  pagination, permissions
 from rest_framework.views import APIView
@@ -9,6 +9,7 @@ from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import action
+
 
 from api.errors import Error
 from rest_framework.permissions import IsAuthenticated
@@ -95,8 +96,8 @@ class GetToken(APIView):
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    filter_backends = (DjangoFilterBackend,)
-    permission_classes = (AuthorOrAdminOrReadOnly,)
+    permission_classes = [IsAdmin]
+    #filter_backends = (filters.SearchFilter,)
 
     def get_object(self):
         return get_object_or_404(
@@ -117,8 +118,8 @@ class CategoryViewSet(viewsets.ModelViewSet):
 class GenreViewSet(viewsets.ModelViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
-    filter_backends = (DjangoFilterBackend,)
-    permission_classes = (AuthorOrAdminOrReadOnly,)
+    permission_classes = [IsAdmin]
+    #filter_backends = (filters.SearchFilter,)
 
     def get_object(self):
         return get_object_or_404(
@@ -136,24 +137,11 @@ class GenreViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_204_NO_CONTENT)
 
 
-class TitleFilter(filters.FilterSet):
-    genre = CharFilter(field_name='genre__slug',
-                       lookup_expr='icontains')
-    category = CharFilter(field_name='category__slug',
-                          lookup_expr='icontains')
-    name = CharFilter(field_name='name',
-                      lookup_expr='icontains')
-
-    class Meta:
-        model = Title
-        fields = ['year']
-
-
 class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.annotate(
         rating=Avg('reviews__score')).order_by('rating')
     serializer_class = TitleSerializer
-    permission_classes = (AuthorOrAdminOrReadOnly, )
+    permission_classes = [IsAdmin]
     filterset_class = TitleFilter
 
     def get_object(self):
