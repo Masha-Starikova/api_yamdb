@@ -1,4 +1,5 @@
 from asyncio import constants
+from tabnanny import verbose
 from django.db import models
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.contrib.auth.models import AbstractUser
@@ -125,7 +126,7 @@ class Title(models.Model):
 
 
 class Review(models.Model):
-    text = models.TextField()
+    text = models.TextField(verbose_name='Текст')
     author = models.ForeignKey(
         User, on_delete=models.CASCADE,
         related_name='reviews', blank=True
@@ -136,7 +137,7 @@ class Review(models.Model):
             MinValueValidator(1)
         ])
     pub_date = models.DateTimeField(
-        'Дата публикации', auto_now_add=True, blank=True
+        'Дата публикации', auto_now_add=True
     )
     title = models.ForeignKey(
         Title, on_delete=models.CASCADE,
@@ -158,13 +159,13 @@ class Review(models.Model):
 
 
 class Comment(models.Model):
-    text = models.TextField()
-    autor = models.ForeignKey(
+    text = models.TextField(verbose_name='Текст')
+    author = models.ForeignKey(
         User, on_delete=models.CASCADE,
-        related_name='comments', blank=True
+        related_name='comments'
     )
     pub_date = models.DateTimeField(
-        'Дата публикации', auto_now_add=True, blank=True
+        'Дата публикации', auto_now_add=True
     )
     review = models.ForeignKey(
         Review, on_delete=models.CASCADE,
@@ -172,7 +173,7 @@ class Comment(models.Model):
     )
 
     class Meta:
-        ordering = ('-pub_date', )
+        ordering = ['pub_date', ]
         verbose_name = 'Комментарий'
 
     def __str__(self):
