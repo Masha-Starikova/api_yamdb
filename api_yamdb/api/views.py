@@ -8,10 +8,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
-
-from api.authenticaton import CustomAuthentication
 from api.errors import Error
-from api.permissions import IsAdmin, IsOwner, IsAdminModeratorAuthorOrReadOnly
+from api.permissions import IsAdmin, IsOwner, AuthorOrAdminOrReadOnly
 from api.services import create_user, update_token
 from django_filters import rest_framework as filters
 from reviews.models import Token, Genre, Category, Title, Review
@@ -29,7 +27,7 @@ User = get_user_model()
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    authentication_classes = (CustomAuthentication, )
+#    authentication_classes = (, )
     permission_classes=(IsAdmin,)
     lookup_field = 'username'
 
@@ -38,7 +36,7 @@ class MeViewSet(viewsets.ViewSet):
     queryset = User.objects.all()
     serializer_class = MeSerializer
     permission_classes = (IsOwner,)
-    authentication_classes = (CustomAuthentication,)
+#    authentication_classes = (,)
     
     def retrieve(self, request, pk=None):
         return Response({'1': '1'})
@@ -73,7 +71,7 @@ class TokenViewSet(viewsets.ModelViewSet):
     serializer_class = TokenSerializer
     queryset = Token.objects.all()
     http_method_names = ['get']
-    authentication_classes = (CustomAuthentication, )
+#    authentication_classes = (, )
     permission_classes = (IsAdmin, )
 
 
@@ -124,7 +122,7 @@ class TitleViewSet(viewsets.ModelViewSet):
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
     permission_classes = [
-        IsAdminModeratorAuthorOrReadOnly,
+        AuthorOrAdminOrReadOnly,
         permissions.IsAuthenticatedOrReadOnly
     ]
 
@@ -150,8 +148,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
-    permission_classes = [IsAdminModeratorAuthorOrReadOnly]
-    authentication_classes = (CustomAuthentication, )
+    permission_classes = [AuthorOrAdminOrReadOnly]
 
     def get_queryset(self):
         return get_object_or_404(
