@@ -9,7 +9,7 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from api.errors import Error
-from api.permissions import IsAdmin, IsOwner, AuthorOrAdminOrReadOnly
+from api.permissions import IsAdmin, IsOwner, AuthorOrAdminOrReadOnly, IsAuthenticatedOrReadOnly, IsAdminModeratorAuthorOrReadOnly
 from api.services import create_user, update_token
 from django_filters import rest_framework as filters
 from reviews.models import Token, Genre, Category, Title, Review
@@ -121,10 +121,7 @@ class TitleViewSet(viewsets.ModelViewSet):
 
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
-    permission_classes = [
-        AuthorOrAdminOrReadOnly,
-        permissions.IsAuthenticatedOrReadOnly
-    ]
+    permission_classes = [IsAdminModeratorAuthorOrReadOnly, IsAuthenticatedOrReadOnly]
 
     def get_title(self):
         return get_object_or_404(Title, pk=self.kwargs.get('title_id'))
@@ -134,26 +131,15 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user, title=self.get_title())
-    
-    def validate(self, data):
-        request = self.context['request']
-        if request.method != 'POST':
-            return data
-        author = self.request.user
-        title_id = self.context['request'].parser_context['kwargs']['title_id']
-        if Review.objects.filter(title_id=title_id,author=author).exists():
-            raise ValueError('Нельзя добовлять более одного отзыва.')
-        return data
 
 
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
-    permission_classes = [AuthorOrAdminOrReadOnly]
+    permission_classes = [IsAdminModeratorAuthorOrReadOnly, IsAuthenticatedOrReadOnly]
 
     def get_queryset(self):
-        return get_object_or_404(
-            Review, pk=self.kwargs.get('review_id')
-        ).comments.all()
+        review = get_object_or_404(Review, pk=self.kwargs.get('review_id'))
+        return review.comments.all()
 
     def perform_create(self, serializer):
         title_id = self.kwargs.get('title_id')

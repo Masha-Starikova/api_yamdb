@@ -1,3 +1,4 @@
+from attr import field
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from rest_framework import serializers
@@ -96,24 +97,30 @@ class TitleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Title
-        fields = '__all__'
+        fields = ('id', 'text', 'author', 'source', 'pub_date')
 
 
 class CommentSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(
         read_only=True, slug_field='username'
     )
+#    review = serializers.SlugField(
+#       read_only=True
+#   )
 
     class Meta:
         model = Comment
-        exclude = ['review' ]
-        read_only_fields = ('title')
-
+#        fields = ('id', 'text', 'author', 'pub_date' )
+        fields = '__all__'
+       
 
 class ReviewSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(
         read_only=True, slug_field='username'
     )
+#    title = serializers.SlugField(
+#       read_only=True
+#    )
 
     def validate(self, data):
         request = self.context['request']
@@ -127,5 +134,5 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Review
-        exclude = ['title', ]
-        read_only_fields = ('title', 'review')
+#        fields = ('id', 'text', 'author', 'score', 'pub_date' )
+        fields = '__all__'

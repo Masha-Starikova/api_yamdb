@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import User, Genre, Category, Title, Review, Comment
+from .models import User, Genre, Category, Title #Review, Comment
 
 admin.site.register(User)
 
@@ -25,16 +25,16 @@ class TitleAdmin(admin.ModelAdmin):
 admin.site.register(Title, TitleAdmin)
 
 
-class ReviewAdmin(admin.ModelAdmin):
-    list_display = ('id', 'title_id', 'text', 'autor', 'score', 'pub_date')
+#class ReviewAdmin(admin.ModelAdmin):
+#    list_display = ('id', 'title_id', 'text', 'author', 'score', 'pub_date')
 
 
-admin.site.register(Review, ReviewAdmin)
+#admin.site.register(Review, ReviewAdmin)
 
 
-class CommentAdmin(admin.ModelAdmin):
-    list_display = ('id', 'review_id', 'text', 'autor', 'pub_date')
-
-
-admin.site.register(Comment, CommentAdmin)
+#class CommentAdmin(admin.ModelAdmin):
+#    list_display = ('id', 'review_id', 'text', 'autor', 'pub_date')
+#
+#
+#admin.site.register(Comment, CommentAdmin)
 
