@@ -11,6 +11,7 @@ class User(AbstractUser):
     )
     role = models.CharField(max_length=20, choices=ROLES, default='user')
     bio = models.TextField('Биография', blank=True)
+    confirmation_code = models.IntegerField(default=0)
 
     class Meta:
         ordering = ('id', )
@@ -34,6 +35,9 @@ class User(AbstractUser):
     @property
     def is_user(self):
         return self.role == 'user'
+    
+    def check_confirmation_code(self, code):
+        return self.confirmation_code == code
 
 
 class Token(models.Model):
