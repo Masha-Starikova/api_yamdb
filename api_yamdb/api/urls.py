@@ -4,9 +4,9 @@ from rest_framework import routers
 from api.views import (
     GenreViewSet, CategoryViewSet, 
     TitleViewSet, CommentViewSet, 
-    ReviewViewSet, TokenViewSet
+    ReviewViewSet, TokenViewSet,
 )
-from api.views import Signup1, GetToken, UserViewSet
+from api.views import Signup, GetToken, UserViewSet
 
 
 v1_router = routers.DefaultRouter()
@@ -29,7 +29,5 @@ v1_router.register(
 urlpatterns = [
     path('v1/', include(v1_router.urls)),
     path('v1/auth/token/', GetToken.as_view()),
-#    path('v1/users/me/', MeViewSet.as_view({'patch': 'partial_update', 'get': 'retrieve'})),
-    path('v1/auth/signup/', Signup1.as_view())
+    path('v1/auth/signup/', Signup.as_view())
 ]
-

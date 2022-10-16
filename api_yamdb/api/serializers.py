@@ -12,6 +12,19 @@ from reviews.models import Token
 User = get_user_model()
 
 
+class ProfileEditSerializer(serializers.ModelSerializer):
+    class Meta:
+        fields = (
+            "username",
+            "email",
+            "first_name",
+            "last_name",
+            "bio",
+            "role",
+        )
+        model = User
+        read_only_fields = ("role",)
+
 class UserSerializer(serializers.ModelSerializer):
     username = serializers.CharField(required=True)
     email = serializers.CharField(required=True)
@@ -30,13 +43,6 @@ class UserSerializer(serializers.ModelSerializer):
         )
 
 
-    def validate_username(self, value):
-        if value == 'me':
-            raise serializers.ValidationError(
-                'Имя пользователя "me" не разрешено.'
-            )
-        return value
-
 
 class TokenSerializer(serializers.ModelSerializer):
     class Meta:
@@ -49,11 +55,11 @@ class MeSerializer(serializers.ModelSerializer):
         model = User
         fields = ['username', 'email', 'first_name', 'last_name', 'bio', 'role']
 
-    def update_user_data(self, validated_data, user):
-        for k, v in validated_data.items():
-            setattr(user, k, v)
-        user.save()
-        return user
+    # def update_user_data(self, validated_data, user):
+    #     for k, v in validated_data.items():
+    #         setattr(user, k, v)
+    #     user.save()
+    #     return user
 
 
 class AuthSerializer(serializers.Serializer):
@@ -71,6 +77,12 @@ class AuthSerializer(serializers.Serializer):
 class SignupSerializer(serializers.Serializer):
     username = serializers.CharField(required=True)
     email = serializers.EmailField(required=True)
+    
+    def validate_useranme(self, value):
+        if value == 'me':
+            raise ValidationError('cant user "me"')
+        return value
+
 
 
 class GenreSerializer(serializers.ModelSerializer):
@@ -113,6 +125,21 @@ class TitleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Title
         fields = '__all__'
+
+
+class TitleCreateSerializer(serializers.ModelSerializer):
+    category = serializers.SlugRelatedField(
+        slug_field='slug', queryset=Category.objects.all(),
+    )
+    genre = serializers.SlugRelatedField(
+        slug_field='slug', queryset=Genre.objects.all(), many=True
+    )
+
+    class Meta:
+        model = Title
+        fields = (
+            'id', 'name', 'year', 'description', 'genre', 'category'
+        )        
 
 
 class CommentSerializer(serializers.ModelSerializer):
