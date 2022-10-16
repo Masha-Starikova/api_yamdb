@@ -7,16 +7,17 @@ from rest_framework import viewsets,  pagination, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.decorators import action
 
 from api.errors import Error
-from api.permissions import IsAdmin, IsOwner, AuthorOrAdminOrReadOnly
+from api.permissions import IsAdmin, IsOwner, AuthorOrAdminOrReadOnly, IsModerator
 from api.services import create_user, update_token
 from django_filters import rest_framework as filters
 from reviews.models import Token, Genre, Category, Title, Review
 from api.serializers import (
     CategorySerializer, CommentSerializer,
     GenreSerializer, ReviewSerializer,
-    TitleSerializer, TokenSerializer,
+    TitleSerializer, TitleCreateSerializer, TokenSerializer,
     SignupSerializer, AuthSerializer,
     MeSerializer, UserSerializer)
 
@@ -88,14 +89,58 @@ class GetToken(APIView):
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
-class GenreViewSet(viewsets.ModelViewSet):
-    queryset = Genre.objects.all()
-    serializer_class = GenreSerializer
-
-
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
+    filter_backends = (DjangoFilterBackend,)
+    permission_classes = (AuthorOrAdminOrReadOnly,)
+
+    def get_object(self):
+        return get_object_or_404(
+            self.queryset, slug=self.kwargs["slug"])
+
+    @action(
+        detail=False, methods=['delete'],
+        url_path=r'(?P<slug>\w+)',
+        lookup_field='slug', url_name='category_slug'
+    )
+    def get_category(self, request, slug):
+        category = self.get_object()
+        serializer = CategorySerializer(category)
+        category.delete()
+        return Response(serializer.data, status=status.HTTP_204_NO_CONTENT)
+
+
+class GenreViewSet(viewsets.ModelViewSet):
+    queryset = Genre.objects.all()
+    serializer_class = GenreSerializer
+    filter_backends = (DjangoFilterBackend,)
+    permission_classes = (AuthorOrAdminOrReadOnly,)
+
+    def get_object(self):
+        return get_object_or_404(
+            self.queryset, slug=self.kwargs["slug"])
+
+    @action(
+        detail=False, methods=['delete'],
+        url_path=r'(?P<slug>\w+)',
+        lookup_field='slug', url_name='category_slug'
+    )
+    def get_genre(self, request, slug):
+        category = self.get_object()
+        serializer = CategorySerializer(category)
+        category.delete()
+        return Response(serializer.data, status=status.HTTP_204_NO_CONTENT)
+
+    def validate(self, data):
+        request = self.context['request']
+        if request.method != 'POST':
+            return data
+        author = self.request.user
+        title_id = self.context['request'].parser_context['kwargs']['title_id']
+        if Genre.objects.filter(title_id=title_id,author=author).exists():
+            raise ValueError
+        return data    
 
 
 class TitleFilter(filters.FilterSet):
@@ -117,6 +162,16 @@ class TitleViewSet(viewsets.ModelViewSet):
     serializer_class = TitleSerializer
     permission_classes = (IsOwner, )
     filterset_class = TitleFilter
+
+    def get_object(self):
+        return get_object_or_404(
+            self.queryset, slug=self.kwargs["slug"])
+   
+
+    def get_serializer_class(self):
+        if self.request.method in ('POST', 'PATCH',):
+            return TitleCreateSerializer
+        return TitleSerializer
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
