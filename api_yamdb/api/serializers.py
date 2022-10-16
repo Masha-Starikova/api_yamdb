@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from rest_framework import serializers
 from django.shortcuts import get_object_or_404
+from rest_framework.validators import UniqueTogetherValidator
 
 from reviews.models import Genre, Category, Title, Comment, Review
 from reviews.models import Token
@@ -21,6 +22,13 @@ class UserSerializer(serializers.ModelSerializer):
         fields = (
             'username', 'email', 'first_name', 'last_name', 'bio', 'role',
         )
+        validators = (
+            UniqueTogetherValidator(
+                queryset=User.objects.all(),
+                fields=['username', 'email']
+            ),
+        )
+
 
     def validate_username(self, value):
         if value == 'me':
@@ -39,7 +47,7 @@ class TokenSerializer(serializers.ModelSerializer):
 class MeSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = '__all__'
+        fields = ['username', 'email', 'first_name', 'last_name', 'bio', 'role']
 
     def update_user_data(self, validated_data, user):
         for k, v in validated_data.items():
@@ -51,6 +59,13 @@ class MeSerializer(serializers.ModelSerializer):
 class AuthSerializer(serializers.Serializer):
     username = serializers.CharField(required=True)
     confirmation_code = serializers.IntegerField(required=True)
+
+    def validate_username(self, value):
+        if value == 'me':
+            raise serializers.ValidationError(
+                'Имя пользователя "me" не разрешено.'
+            )
+        return value
 
 
 class SignupSerializer(serializers.Serializer):
