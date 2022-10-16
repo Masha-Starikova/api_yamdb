@@ -13,6 +13,7 @@ class User(AbstractUser):
     )
     role = models.CharField(max_length=20, choices=ROLES, default='user')
     bio = models.TextField('Биография', blank=True)
+    confirmation_code = models.IntegerField(default=0)
 
     class Meta:
         ordering = ('id', )
@@ -36,13 +37,15 @@ class User(AbstractUser):
     @property
     def is_user(self):
         return self.role == 'user'
+    
+    def check_confirmation_code(self, code):
+        return self.confirmation_code == code
 
 
 class Token(models.Model):
     token = models.CharField(max_length=32, null=True, default=None)
     user = models.OneToOneField(User, on_delete=models.CASCADE, unique=True)
     confirmation_code = models.IntegerField(null=False, blank=False, default=0)
-
 
 class Genre(models.Model):
     id = models.AutoField(primary_key=True, db_index=True)
