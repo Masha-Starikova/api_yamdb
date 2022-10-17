@@ -1,32 +1,26 @@
-from functools import partial
-from multiprocessing import context
 from django.contrib.auth import get_user_model
-from django.shortcuts import get_object_or_404
 from django.db.models import Avg
-from .filters import TitleFilter
-from rest_framework.filters import SearchFilter
+from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import viewsets, permissions
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
-from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework.filters import SearchFilter
-from .filters import TitleFilter
-from api.errors import Error
-from rest_framework.permissions import IsAuthenticated
-from api.permissions import IsAdmin, IsOwner, AuthorOrAdminOrReadOnly, IsAdminModeratorAuthorOrReadOnly, IsAuthenticatedOrReadOnly
-from api.services import create_user, update_token
-from django_filters import rest_framework as filters
-from reviews.models import Token, Genre, Category, Title, Review
-from api.serializers import (
-     CategorySerializer, CommentSerializer,
-    GenreSerializer, ReviewSerializer,
-    TitleSerializer, TokenSerializer,
-    SignupSerializer, AuthSerializer, TitleCreateSerializer,
-    UserSerializer, ProfileEditSerializer)
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import AccessToken
+from reviews.models import Category, Genre, Review, Title, Token
 
+from api.errors import Error
+from api.permissions import (AuthorOrAdminOrReadOnly, IsAdmin,
+                             IsAuthenticatedOrReadOnly)
+from api.serializers import (AuthSerializer, CategorySerializer,
+                             CommentSerializer, GenreSerializer,
+                             ReviewSerializer, SignupSerializer,
+                             TitleCreateSerializer, TitleSerializer,
+                             TokenSerializer, UserSerializer)
+from api.services import create_user
+
+from .filters import TitleFilter
 
 User = get_user_model()
 
@@ -37,7 +31,6 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAdmin,)
     lookup_field = "username"
 #    search_fields = ("username",)
-
 
     @action(
         detail=False,
@@ -58,7 +51,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
 
 class Signup(APIView):
-   def post(self, request):
+    def post(self, request):
         serializer = SignupSerializer(data=request.data)
         if serializer.is_valid():
             username = serializer.data.get('username')
@@ -73,7 +66,7 @@ class Signup(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-#this view for tests
+# this view for tests
 class TokenViewSet(viewsets.ModelViewSet):
     serializer_class = TokenSerializer
     queryset = Token.objects.all()
@@ -110,7 +103,6 @@ class CategoryViewSet(viewsets.ModelViewSet):
         url_path=r'(?P<slug>\w+)',
         lookup_field='slug', url_name='slug'
     )
-
     def get_category(self, request, slug):
         category = self.get_object()
         serializer = CategorySerializer(category)
@@ -134,7 +126,6 @@ class GenreViewSet(viewsets.ModelViewSet):
         url_path=r'(?P<slug>\w+)',
         lookup_field='slug', url_name='slug'
     )
-
     def get_genre(self, request, slug):
         category = self.get_object()
         serializer = CategorySerializer(category)
@@ -161,7 +152,7 @@ class TitleViewSet(viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         if self.request.method in ('POST', 'PATCH',):
-            return TitleCreateSerializer        
+            return TitleCreateSerializer
         return TitleSerializer
 
 

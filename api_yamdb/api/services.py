@@ -3,7 +3,6 @@ import random
 from django.core.mail import send_mail
 from django.db.models import Q
 from django.utils.crypto import get_random_string
-
 from reviews.models import Token, User
 
 
@@ -22,7 +21,7 @@ def create_user(username, email):
         new_user = User(username=username, email=email)
         new_user.set_password(User.objects.make_random_password(length=10))
         new_user.save()
-        confirmation_code=str(random.randint(1000, 9999))
+        confirmation_code = str(random.randint(1000, 9999))
         new_token_obj = Token(
             user=new_user,
             confirmation_code=confirmation_code

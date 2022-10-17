@@ -1,10 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from rest_framework import serializers
-
-from reviews.models import Genre, Category, Title, Comment, Review
-from reviews.models import Token
-
+from reviews.models import Category, Comment, Genre, Review, Title, Token
 
 User = get_user_model()
 
@@ -30,6 +27,7 @@ class UserSerializer(serializers.ModelSerializer):
         fields = (
             'username', 'email', 'first_name', 'last_name', 'bio', 'role',
         )
+
     def validate_username(self, value):
         if value == 'me':
             raise serializers.ValidationError(
@@ -59,12 +57,11 @@ class AuthSerializer(serializers.Serializer):
 class SignupSerializer(serializers.Serializer):
     username = serializers.CharField(required=True)
     email = serializers.EmailField(required=True)
-    
+
     def validate_useranme(self, value):
         if value == 'me':
             raise ValidationError('cant user "me"')
         return value
-
 
 
 class GenreSerializer(serializers.ModelSerializer):
@@ -121,7 +118,7 @@ class TitleCreateSerializer(serializers.ModelSerializer):
         model = Title
         fields = (
             'id', 'name', 'year', 'description', 'genre', 'category'
-        )        
+        )
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -129,24 +126,23 @@ class CommentSerializer(serializers.ModelSerializer):
         read_only=True, slug_field='username'
     )
     review = serializers.SlugRelatedField(
-       read_only=True, slug_field='text'
-   )
+        read_only=True, slug_field='text'
+    )
 
     class Meta:
         model = Comment
 #        fields = ('id', 'text', 'author', 'pub_date' )
         fields = '__all__'
-       
+
 
 class ReviewSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(
         read_only=True, slug_field='username'
     )
 
-
     class Meta:
         model = Review
-        fields = ('id', 'text', 'author', 'score', 'pub_date' )
+        fields = ('id', 'text', 'author', 'score', 'pub_date')
 
     def validate(self, data):
         request = self.context['request']
