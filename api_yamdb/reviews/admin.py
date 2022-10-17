@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import User, Genre, Category, Title, Review, Comment
+
+from .models import Category, Genre, Title, User
 
 admin.site.register(User)
 
@@ -23,18 +24,3 @@ class TitleAdmin(admin.ModelAdmin):
 
 
 admin.site.register(Title, TitleAdmin)
-
-
-class ReviewAdmin(admin.ModelAdmin):
-    list_display = ('id', 'title_id', 'text', 'autor', 'score', 'pub_date')
-
-
-admin.site.register(Review, ReviewAdmin)
-
-
-class CommentAdmin(admin.ModelAdmin):
-    list_display = ('id', 'review_id', 'text', 'autor', 'pub_date')
-
-
-admin.site.register(Comment, CommentAdmin)
-
