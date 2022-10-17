@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework_simplejwt.tokens import AccessToken
-from rest_framework import filters as SearchFilter
+from rest_framework.filters import SearchFilter
 from .filters import TitleFilter
 from api.errors import Error
 from api.permissions import IsAdmin, IsOwner, IsModerator, IsAuthenticatedOrReadOnly, IsAdminModeratorAuthorOrReadOnly
@@ -157,6 +157,7 @@ class TitleViewSet(viewsets.ModelViewSet):
 
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
+    http_method_names = ['get', 'post', 'patch', 'delete']
     permission_classes = [IsAdminModeratorAuthorOrReadOnly, IsAuthenticatedOrReadOnly]
 #    lookup_field = "title_id"
 
@@ -172,6 +173,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
+    http_method_names = ['get', 'post', 'patch', 'delete']
     permission_classes = [IsAdminModeratorAuthorOrReadOnly, IsAuthenticatedOrReadOnly]
 
     def get_queryset(self):
