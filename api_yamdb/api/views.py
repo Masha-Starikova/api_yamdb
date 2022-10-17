@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from django.db.models import Avg
 from .filters import TitleFilter
+from rest_framework.filters import SearchFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets,  pagination, permissions
 from rest_framework.views import APIView
@@ -13,7 +14,7 @@ from rest_framework.decorators import action
 
 from api.errors import Error
 from rest_framework.permissions import IsAuthenticated
-from api.permissions import IsAdmin, IsOwner, AuthorOrAdminOrReadOnly
+from api.permissions import IsAdmin, IsOwner, AuthorOrAdminOrReadOnly, IsAdminModeratorAuthorOrReadOnly, IsAuthenticatedOrReadOnly
 from api.services import create_user, update_token
 from django_filters import rest_framework as filters
 from reviews.models import Token, Genre, Category, Title, Review
@@ -97,7 +98,9 @@ class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = [IsAdmin]
-    #filter_backends = (filters.SearchFilter,)
+    filter_backends = (SearchFilter,)
+    search_fields = ('name',)
+
 
     def get_object(self):
         return get_object_or_404(
@@ -118,12 +121,9 @@ class CategoryViewSet(viewsets.ModelViewSet):
 class GenreViewSet(viewsets.ModelViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
-    permission_classes = [IsAdmin]
-    #filter_backends = (filters.SearchFilter,)
-
-    def get_object(self):
-        return get_object_or_404(
-            self.queryset, slug=self.kwargs["slug"])
+    permission_classes =  [IsAdmin, IsAuthenticatedOrReadOnly]
+    filter_backends = (SearchFilter,)
+    search_fields = ('name',)
 
     @action(
         detail=False, methods=['delete'],
@@ -138,15 +138,16 @@ class GenreViewSet(viewsets.ModelViewSet):
 
 
 class TitleViewSet(viewsets.ModelViewSet):
-    queryset = Title.objects.annotate(
-        rating=Avg('reviews__score')).order_by('rating')
+    queryset = Title.objects.all().annotate(
+        rating=Avg('reviews__score')).order_by('name')
     serializer_class = TitleSerializer
-    permission_classes = [IsAdmin]
+    permission_classes = [IsAdminModeratorAuthorOrReadOnly]
+    filter_backends = (DjangoFilterBackend,)
     filterset_class = TitleFilter
 
     def get_object(self):
         return get_object_or_404(
-            self.queryset, slug=self.kwargs['slug'])
+            self.queryset, slug=self.kwargs['author'])
    
 
     def get_serializer_class(self):
