@@ -10,7 +10,6 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import AccessToken
 from reviews.models import Category, Genre, Review, Title, Token
 
-from api.errors import Error
 from api.permissions import (AuthorOrAdminOrReadOnly, IsAdmin,
                              IsAuthenticatedOrReadOnly)
 from api.serializers import (AuthSerializer, CategorySerializer,

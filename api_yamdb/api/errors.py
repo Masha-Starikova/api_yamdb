@@ -1,6 +1,3 @@
-from http.client import METHOD_NOT_ALLOWED
-
-
 class Error:
     USER_DOES_NOT_EXIST = {'details': 'user does not exist'}
     WRONG_DATA = {'details': 'wrong data'}
