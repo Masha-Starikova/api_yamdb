@@ -3,7 +3,8 @@ from multiprocessing import context
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from django.db.models import Avg
-from django_filters import CharFilter
+from .filters import TitleFilter
+from rest_framework.filters import SearchFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets, permissions
 from rest_framework.views import APIView
@@ -14,7 +15,8 @@ from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework.filters import SearchFilter
 from .filters import TitleFilter
 from api.errors import Error
-from api.permissions import IsAdmin, IsOwner, IsModerator, IsAuthenticatedOrReadOnly, IsAdminModeratorAuthorOrReadOnly
+from rest_framework.permissions import IsAuthenticated
+from api.permissions import IsAdmin, IsOwner, AuthorOrAdminOrReadOnly, IsAdminModeratorAuthorOrReadOnly, IsAuthenticatedOrReadOnly
 from api.services import create_user, update_token
 from django_filters import rest_framework as filters
 from reviews.models import Token, Genre, Category, Title, Review
@@ -96,8 +98,10 @@ class GetToken(APIView):
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = [IsAdmin, IsAuthenticatedOrReadOnly]
-#    filter_backends = (SearchFilter,)
+    permission_classes = [IsAdmin]
+    filter_backends = (SearchFilter,)
+    search_fields = ('name',)
+
 
     def get_object(self):
         return get_object_or_404(
@@ -118,12 +122,9 @@ class CategoryViewSet(viewsets.ModelViewSet):
 class GenreViewSet(viewsets.ModelViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
-    permission_classes = [IsAdmin, IsAuthenticatedOrReadOnly]
-#    filter_backends = (SearchFilter,)
-
-    def get_object(self):
-        return get_object_or_404(
-            self.queryset, slug=self.kwargs["slug"])
+    permission_classes =  [IsAdmin, IsAuthenticatedOrReadOnly]
+    filter_backends = (SearchFilter,)
+    search_fields = ('name',)
 
     @action(
         detail=False, methods=['delete'],
@@ -138,15 +139,16 @@ class GenreViewSet(viewsets.ModelViewSet):
 
 
 class TitleViewSet(viewsets.ModelViewSet):
-    queryset = Title.objects.annotate(
-        rating=Avg('reviews__score')).order_by('rating')
+    queryset = Title.objects.all().annotate(
+        rating=Avg('reviews__score')).order_by('name')
     serializer_class = TitleSerializer
-    permission_classes = [IsAdmin, IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAdminModeratorAuthorOrReadOnly]
+    filter_backends = (DjangoFilterBackend,)
     filterset_class = TitleFilter
 
-#    def get_object(self):
-#        return get_object_or_404(
-#            self.queryset, slug=self.kwargs['slug'])
+    def get_object(self):
+        return get_object_or_404(
+            self.queryset, slug=self.kwargs['author'])
    
 
     def get_serializer_class(self):
