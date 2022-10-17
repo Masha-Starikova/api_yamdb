@@ -1,12 +1,12 @@
 # api_yamdb
 api_yamdb
-Группа 9.
-#### Разработчики 
+### Разработчики:
 
 ```
-Эльмира Зайнагабдинова
-Георгий Сехниев
-Мария Старикова
+Группа 9.
+https://github.com/Sekhniev
+https://github.com/Elmiraz-ship-it
+https://github.com/Masha-Starikova
 ```
 
 ### Как запустить проект:

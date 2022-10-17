@@ -149,6 +149,10 @@ class ReviewSerializer(serializers.ModelSerializer):
         author = request.user
         title_id = self.context['view'].kwargs.get('title_id')
         if request.method == 'POST':
-            if Review.objects.filter(title_id=title_id, author=author).exists():
-                raise ValidationError('Нельзя добовлять более одного отзыва.')
+            if Review.objects.filter(
+                title_id=title_id, author=author
+            ).exists():
+                raise ValidationError(
+                    'Нельзя добовлять более одного отзыва.'
+                )
         return data
