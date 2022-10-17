@@ -97,7 +97,6 @@ class GetToken(APIView):
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = [IsAdmin]
     filter_backends = (SearchFilter,)
     search_fields = ('name',)
 
@@ -117,11 +116,15 @@ class CategoryViewSet(viewsets.ModelViewSet):
         category.delete()
         return Response(serializer.data, status=status.HTTP_204_NO_CONTENT)
 
+    def get_permissions(self):
+        if self.action == 'list' or self.action == 'retrieve':
+            return (IsAuthenticatedOrReadOnly(),)
+        return (IsAdmin(),)     
+
 
 class GenreViewSet(viewsets.ModelViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
-    permission_classes =  [IsAdmin, IsAuthenticatedOrReadOnly]
     filter_backends = (SearchFilter,)
     search_fields = ('name',)
 
@@ -136,24 +139,22 @@ class GenreViewSet(viewsets.ModelViewSet):
         category.delete()
         return Response(serializer.data, status=status.HTTP_204_NO_CONTENT)
 
+    def get_permissions(self):
+        if self.action == 'list' or self.action == 'retrieve':
+            return (IsAuthenticatedOrReadOnly(),)
+        return (IsAdmin(),)    
+
 
 class TitleViewSet(viewsets.ModelViewSet):
-    queryset = Title.objects.all().annotate(
-        rating=Avg('reviews__score')).order_by('name')
+    queryset = Title.objects.all()
     serializer_class = TitleSerializer
-    permission_classes = [IsAdminModeratorAuthorOrReadOnly]
     filter_backends = (DjangoFilterBackend,)
     filterset_class = TitleFilter
 
-    def get_object(self):
-        return get_object_or_404(
-            self.queryset, slug=self.kwargs['author'])
-   
-
-    def get_serializer_class(self):
-        if self.request.method in ('POST', 'PATCH',):
-            return TitleCreateSerializer
-        return TitleSerializer
+    def get_permissions(self):
+        if self.action == 'list' or self.action == 'retrieve':
+            return (IsAuthenticatedOrReadOnly(),)
+        return (IsAdmin(),)
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
