@@ -1,14 +1,10 @@
 import random
 
-from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
 from django.db.models import Q
 from django.utils.crypto import get_random_string
 
-from reviews.models import Token
-
-
-User = get_user_model()
+from reviews.models import Token, User
 
 
 def send_confirmation_code(code, recipient):
@@ -25,9 +21,13 @@ def create_user(username, email):
     if not User.objects.filter(Q(username=username) | Q(email=email)).exists():
         new_user = User(username=username, email=email)
         new_user.set_password(User.objects.make_random_password(length=10))
-        confirmation_code= random.randint(1000, 9999)
-        new_user.confirmation_code = confirmation_code
         new_user.save()
+        confirmation_code=str(random.randint(1000, 9999))
+        new_token_obj = Token(
+            user=new_user,
+            confirmation_code=confirmation_code
+        )
+        new_token_obj.save()
         send_confirmation_code(confirmation_code, email)
         return True
     return False

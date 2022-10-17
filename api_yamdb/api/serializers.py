@@ -1,9 +1,6 @@
-from attr import field
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from rest_framework import serializers
-from django.shortcuts import get_object_or_404
-from rest_framework.validators import UniqueTogetherValidator
 
 from reviews.models import Genre, Category, Title, Comment, Review
 from reviews.models import Token
@@ -25,41 +22,26 @@ class ProfileEditSerializer(serializers.ModelSerializer):
         model = User
         read_only_fields = ("role",)
 
+
 class UserSerializer(serializers.ModelSerializer):
-    username = serializers.CharField(required=True)
-    email = serializers.CharField(required=True)
-    role = serializers.StringRelatedField(read_only=True)
 
     class Meta:
         model = User
         fields = (
             'username', 'email', 'first_name', 'last_name', 'bio', 'role',
         )
-        validators = (
-            UniqueTogetherValidator(
-                queryset=User.objects.all(),
-                fields=['username', 'email']
-            ),
-        )
-
+    def validate_username(self, value):
+        if value == 'me':
+            raise serializers.ValidationError(
+                'Имя пользователя "me" не разрешено.'
+            )
+        return value
 
 
 class TokenSerializer(serializers.ModelSerializer):
     class Meta:
         model = Token
         fields = '__all__'
-
-
-class MeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ['username', 'email', 'first_name', 'last_name', 'bio', 'role']
-
-    # def update_user_data(self, validated_data, user):
-    #     for k, v in validated_data.items():
-    #         setattr(user, k, v)
-    #     user.save()
-    #     return user
 
 
 class AuthSerializer(serializers.Serializer):
@@ -160,21 +142,17 @@ class ReviewSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(
         read_only=True, slug_field='username'
     )
-    title = serializers.SlugRelatedField(
-       read_only=True, slug_field='name'
-    )
+
+
+    class Meta:
+        model = Review
+        fields = ('id', 'text', 'author', 'score', 'pub_date' )
 
     def validate(self, data):
         request = self.context['request']
         author = request.user
         title_id = self.context['view'].kwargs.get('title_id')
-        title = get_object_or_404(Title, pk=title_id)
         if request.method == 'POST':
-            if Review.objects.filter(title=title, author=author).exists():
+            if Review.objects.filter(title_id=title_id, author=author).exists():
                 raise ValidationError('Нельзя добовлять более одного отзыва.')
         return data
-
-    class Meta:
-        model = Review
-#        fields = ('id', 'text', 'author', 'score', 'pub_date' )
-        fields = '__all__'
