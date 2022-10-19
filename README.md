@@ -1,5 +1,14 @@
 # api_yamdb
 api_yamdb
+### Разработчики:
+
+```
+Группа 9.
+https://github.com/Sekhniev
+https://github.com/Elmiraz-ship-it
+https://github.com/Masha-Starikova
+```
+
 ### Как запустить проект:
 
 Клонировать репозиторий и перейти в него в командной строке:

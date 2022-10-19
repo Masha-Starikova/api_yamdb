@@ -1,8 +1,6 @@
-from asyncio import constants
-from tabnanny import verbose
-from django.db import models
-from django.core.validators import MaxValueValidator, MinValueValidator
 from django.contrib.auth.models import AbstractUser
+from django.core.validators import MaxValueValidator, MinValueValidator
+from django.db import models
 
 
 class User(AbstractUser):
@@ -13,19 +11,20 @@ class User(AbstractUser):
     )
     role = models.CharField(max_length=20, choices=ROLES, default='user')
     bio = models.TextField('Биография', blank=True)
-    confirmation_code = models.IntegerField(default=0)
+    email = models.EmailField(max_length=250, unique=True)
+    confirmation_code = models.IntegerField(blank=True, default=0)
 
     class Meta:
         ordering = ('id', )
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
-    
+
     REQUIRED_FIELDS = ['email']
     USERNAME_FIELD = 'username'
 
     def __str__(self):
         return self.username
-    
+
     @property
     def is_admin(self):
         return self.role == 'admin' or self.is_superuser
@@ -37,7 +36,7 @@ class User(AbstractUser):
     @property
     def is_user(self):
         return self.role == 'user'
-    
+
     def check_confirmation_code(self, code):
         return self.confirmation_code == code
 
@@ -46,6 +45,7 @@ class Token(models.Model):
     token = models.CharField(max_length=32, null=True, default=None)
     user = models.OneToOneField(User, on_delete=models.CASCADE, unique=True)
     confirmation_code = models.IntegerField(null=False, blank=False, default=0)
+
 
 class Genre(models.Model):
     id = models.AutoField(primary_key=True, db_index=True)

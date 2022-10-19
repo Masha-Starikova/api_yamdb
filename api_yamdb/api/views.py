@@ -1,59 +1,50 @@
 from django.contrib.auth import get_user_model
-from django.shortcuts import get_object_or_404
 from django.db.models import Avg
-from .filters import TitleFilter
-from rest_framework.filters import SearchFilter
+from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import viewsets,  pagination, permissions
+from rest_framework import permissions, status, viewsets, mixins
+from rest_framework.decorators import action
+from rest_framework.filters import SearchFilter
+from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import AccessToken
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.decorators import action
+from reviews.models import Category, Genre, Review, Title, Token
 
+from api.permissions import (AuthorOrAdminOrReadOnly, IsAdmin,
+                             IsAuthenticatedOrReadOnly, IsReadOnly)
+from api.serializers import (AuthSerializer, CategorySerializer,
+                             CommentSerializer, GenreSerializer,
+                             ReviewSerializer, SignupSerializer,
+                             TitleCreateSerializer, TitleSerializer,
+                             TokenSerializer, UserSerializer)
+from api.services import create_user
 
-from api.errors import Error
-from rest_framework.permissions import IsAuthenticated
-from api.permissions import IsAdmin, IsOwner, AuthorOrAdminOrReadOnly, IsAdminModeratorAuthorOrReadOnly, IsAuthenticatedOrReadOnly
-from api.services import create_user, update_token
-from django_filters import rest_framework as filters
-from reviews.models import Token, Genre, Category, Title, Review
-from api.serializers import (
-    CategorySerializer, CommentSerializer,
-    GenreSerializer, ReviewSerializer,
-    TitleSerializer, TokenSerializer,
-    SignupSerializer, AuthSerializer, TitleCreateSerializer,
-    MeSerializer, UserSerializer, ProfileEditSerializer)
-
+from .filters import TitleFilter
 
 User = get_user_model()
 
 
 class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
+    queryset = User.objects.order_by('username')
     serializer_class = UserSerializer
     permission_classes = (IsAdmin,)
     lookup_field = "username"
-    #filter_backends = (filters.SearchFilter,)
-    search_fields = ("username",)
-
+#    search_fields = ("username",)
 
     @action(
         detail=False,
         methods=["GET", "PATCH"],
-        permission_classes=(IsAuthenticated,),
+        permission_classes=(permissions.IsAuthenticated,),
     )
     def me(self, request):
-        if request.method == "PATCH":
-            serializer = ProfileEditSerializer(
-                request.user, data=request.data, partial=True
+        if request.method == 'PATCH':
+            serializer = UserSerializer(
+                request.user, data=request.data,
+                partial=True, context={'request': request}
             )
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data, status=status.HTTP_200_OK)
-            return Response(
-                serializer.errors, status=status.HTTP_400_BAD_REQUEST
-            )
+            serializer.is_valid(raise_exception=True)
+            serializer.save(role=request.user.role)
+            return Response(serializer.data, status=status.HTTP_200_OK)
         serializer = UserSerializer(request.user)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -63,6 +54,8 @@ class Signup(APIView):
         serializer = SignupSerializer(data=request.data)
         if serializer.is_valid():
             username = serializer.data.get('username')
+            if username == 'me':
+                return Response(status=status.HTTP_400_BAD_REQUEST)
             email = serializer.data.get('email')
             if create_user(username, email):
                 return Response(
@@ -72,7 +65,7 @@ class Signup(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-#this view for tests
+# this view for tests
 class TokenViewSet(viewsets.ModelViewSet):
     serializer_class = TokenSerializer
     queryset = Token.objects.all()
@@ -94,59 +87,29 @@ class GetToken(APIView):
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
-class CategoryViewSet(viewsets.ModelViewSet):
+class MixinsViewSet(mixins.DestroyModelMixin,
+                    mixins.ListModelMixin,
+                    mixins.CreateModelMixin,
+                    viewsets.GenericViewSet):
+    filter_backends = [SearchFilter]
+    permission_classes = (IsAdmin | IsReadOnly,)
+    search_fields = ('name', 'slug')
+    lookup_field = 'slug'
+
+
+class CategoryViewSet(MixinsViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    filter_backends = (SearchFilter,)
-    search_fields = ('name',)
 
 
-    def get_object(self):
-        return get_object_or_404(
-            self.queryset, slug=self.kwargs['slug'])
-
-    @action(
-        detail=False, methods=['delete'],
-        url_path=r'(?P<slug>\w+)',
-        lookup_field='slug', url_name='slug'
-    )
-    def get_category(self, request, slug):
-        category = self.get_object()
-        serializer = CategorySerializer(category)
-        category.delete()
-        return Response(serializer.data, status=status.HTTP_204_NO_CONTENT)
-
-    def get_permissions(self):
-        if self.action == 'list' or self.action == 'retrieve':
-            return (IsAuthenticatedOrReadOnly(),)
-        return (IsAdmin(),)     
-
-
-class GenreViewSet(viewsets.ModelViewSet):
+class GenreViewSet(MixinsViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
-    filter_backends = (SearchFilter,)
-    search_fields = ('name',)
-
-    @action(
-        detail=False, methods=['delete'],
-        url_path=r'(?P<slug>\w+)',
-        lookup_field='slug', url_name='slug'
-    )
-    def get_genre(self, request, slug):
-        category = self.get_object()
-        serializer = CategorySerializer(category)
-        category.delete()
-        return Response(serializer.data, status=status.HTTP_204_NO_CONTENT)
-
-    def get_permissions(self):
-        if self.action == 'list' or self.action == 'retrieve':
-            return (IsAuthenticatedOrReadOnly(),)
-        return (IsAdmin(),)    
 
 
 class TitleViewSet(viewsets.ModelViewSet):
-    queryset = Title.objects.all()
+    queryset = Title.objects.annotate(
+        rating=Avg('reviews__score')).order_by('rating')
     serializer_class = TitleSerializer
     filter_backends = (DjangoFilterBackend,)
     filterset_class = TitleFilter
@@ -156,24 +119,33 @@ class TitleViewSet(viewsets.ModelViewSet):
             return (IsAuthenticatedOrReadOnly(),)
         return (IsAdmin(),)
 
+    def get_serializer_class(self):
+        if self.request.method in ('POST', 'PATCH',):
+            return TitleCreateSerializer
+        return TitleSerializer
+
 
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
     permission_classes = [AuthorOrAdminOrReadOnly]
-
-    def get_title(self):
-        return get_object_or_404(Title, pk=self.kwargs.get('title_id'))
+    http_method_names = ['get', 'post', 'patch', 'delete']
 
     def get_queryset(self):
-        return self.get_title().reviews
+        title = get_object_or_404(Title, pk=self.kwargs.get('title_id'))
+        return title.reviews.all()
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user, title=self.get_title())
+        title = get_object_or_404(Title, pk=self.kwargs.get('title_id'))
+        serializer.save(
+            title=title,
+            author=self.request.user,
+        )
 
 
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
     permission_classes = [AuthorOrAdminOrReadOnly]
+    http_method_names = ['get', 'post', 'patch', 'delete']
 
     def get_queryset(self):
         review = get_object_or_404(Review, pk=self.kwargs.get('review_id'))
