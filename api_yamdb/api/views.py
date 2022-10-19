@@ -76,6 +76,17 @@ def get_token(request):
                 token = AccessToken.for_user(user)
                 return Response({'token': str(token)})
         return Response(status=status.HTTP_400_BAD_REQUEST)
+# class GetToken(APIView):
+#     def post(self, request):
+#         serializer = AuthSerializer(data=request.data)
+#         if serializer.is_valid(raise_exception=True):
+#             username = serializer.data.get('username')
+#             user = get_object_or_404(User, username=username)
+#             confirmation_code = serializer.data.get('confirmation_code')
+#             if user.check_confirmation_code(confirmation_code):
+#                 token = AccessToken.for_user(user)
+#                 return Response({'token': str(token)})
+#         return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
 class MixinsViewSet(mixins.DestroyModelMixin,
