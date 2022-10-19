@@ -3,12 +3,12 @@ from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import permissions, status, viewsets
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view
 from rest_framework.filters import SearchFilter
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import AccessToken
-from reviews.models import Category, Genre, Review, Title, Token
+from reviews.models import Category, Genre, Review, Title
 
 from api.permissions import (AuthorOrAdminOrReadOnly, IsAdmin,
                              IsAuthenticatedOrReadOnly)
@@ -16,7 +16,7 @@ from api.serializers import (AuthSerializer, CategorySerializer,
                              CommentSerializer, GenreSerializer,
                              ReviewSerializer, SignupSerializer,
                              TitleCreateSerializer, TitleSerializer,
-                             TokenSerializer, UserSerializer)
+                             UserSerializer)
 from api.services import create_user
 
 from .filters import TitleFilter
@@ -49,8 +49,9 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-class Signup(APIView):
-    def post(self, request):
+@api_view(['POST'])
+def sign_up(request):
+    if request.method == "POST":
         serializer = SignupSerializer(data=request.data)
         if serializer.is_valid():
             username = serializer.data.get('username')
@@ -63,19 +64,26 @@ class Signup(APIView):
                     status=200
                 )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+ 
+# class Signup(APIView):
+#     def post(self, request):
+#         serializer = SignupSerializer(data=request.data)
+#         if serializer.is_valid():
+#             username = serializer.data.get('username')
+#             if username == 'me':
+#                 return Response(status=status.HTTP_400_BAD_REQUEST)
+#             email = serializer.data.get('email')
+#             if create_user(username, email):
+#                 return Response(
+#                     serializer.data,
+#                     status=200
+#                 )
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-# this view for tests
-class TokenViewSet(viewsets.ModelViewSet):
-    serializer_class = TokenSerializer
-    queryset = Token.objects.all()
-    http_method_names = ['get']
-#    authentication_classes = (, )
-    permission_classes = (IsAdmin, )
-
-
-class GetToken(APIView):
-    def post(self, request):
+@api_view(['POST'])
+def get_token(request):
+    if request.method == "POST":
         serializer = AuthSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             username = serializer.data.get('username')
@@ -85,6 +93,17 @@ class GetToken(APIView):
                 token = AccessToken.for_user(user)
                 return Response({'token': str(token)})
         return Response(status=status.HTTP_400_BAD_REQUEST)
+# class GetToken(APIView):
+#     def post(self, request):
+#         serializer = AuthSerializer(data=request.data)
+#         if serializer.is_valid(raise_exception=True):
+#             username = serializer.data.get('username')
+#             user = get_object_or_404(User, username=username)
+#             confirmation_code = serializer.data.get('confirmation_code')
+#             if user.check_confirmation_code(confirmation_code):
+#                 token = AccessToken.for_user(user)
+#                 return Response({'token': str(token)})
+#         return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
