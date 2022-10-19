@@ -1,90 +1,64 @@
 import csv
-import os
 
-from django.contrib.contenttypes.models import ContentType
-from django.core.management.base import BaseCommand, CommandError
-from django.db import connection
+from django.core.management.base import BaseCommand
+from reviews.models import Title, Review, Category, Genre
 
-from api_yamdb.settings import BASE_DIR
-
-
-def read_model(model_name, path):
-    model_type = ContentType.objects.filter(model=model_name.lower()).first()
-    if not model_type:
-        return
-
-    model = model_type.model_class()
-    items = []
-    path = os.path.join(BASE_DIR, path)
-    with open(path, 'r', encoding='utf-8') as csv_file:
-        reader = csv.DictReader(csv_file)
-        for row in reader:
-            items.append(model(**row))
-
-        if items:
-            model.objects.bulk_create(items)
-
-
-def read_table(table, path, cursor):
-    path = os.path.join(BASE_DIR, path)
-    with open(path, 'r', encoding='utf-8') as csv_file:
-        reader = csv.DictReader(csv_file)
-        header = reader.fieldnames
-        fields = ', '.join(header)
-        values = ', '.join(['%s' for _ in header])
-        for row in reader:
-            cursor.execute(
-                f"INSERT INTO {table}({fields}) VALUES({values})",
-                [row[item] for item in header]
-            )
+from api_yamdb.settings import IMPORT_DATA_ADRESS
 
 
 class Command(BaseCommand):
-    help = 'Импорт данных'
-
-    def add_arguments(self, parser):
-        super(Command, self).add_arguments(parser)
-        parser.add_argument(
-            "--paths",
-            dest="paths",
-            nargs='+',
-            help="Список путей к файлам",
-            type=str,
-        )
-        parser.add_argument(
-            "--models",
-            dest="models",
-            nargs='+',
-            help="Список названий моделей",
-            type=str,
-        )
-        parser.add_argument(
-            "--tables",
-            dest="tables",
-            nargs='+',
-            help="Список названий nf,kbw",
-            type=str,
-        )
+    help = 'Импортирует базу данных для модели User из файла csv'
 
     def handle(self, *args, **options):
-        paths = options.get("paths")
-        models = options.get("models")
-        tables = options.get("tables")
 
-        if not models and not tables or models and tables:
-            raise CommandError('Не корректное указание параметров')
+        with open(
+            f'{IMPORT_DATA_ADRESS}/titles.csv',
+            'r', encoding="utf-8-sig"
+        ) as csv_file:
+            dataReader = csv.DictReader(csv_file)
 
-        if models and paths:
-            if len(models) != len(paths):
-                raise CommandError('Количество путей и моделей не совпадает')
+            for row in dataReader:
+                titles = Title()
+                titles.id = row['id']
+                titles.name = row['name']
+                titles.year = row['year']
+                titles.category = row['category']
 
-            for model_name, path in zip(models, paths):
-                read_model(model_name, path)
+        with open(
+            f'{IMPORT_DATA_ADRESS}/review.csv',
+            'r', encoding="utf-8-sig"
+        ) as csv_file:
+            dataReader = csv.DictReader(csv_file)
 
-        elif tables and paths:
-            if len(tables) != len(paths):
-                raise CommandError('Количество путей и таблиц не совпадает')
+            for row in dataReader:
+                reviews = Review()
+                reviews.id = row['id']
+                reviews.title = row['title_id']
+                reviews.text = row['year']
+                reviews.author = row['autor']
+                reviews.score = row['score']
+                reviews.pub_date = row['pub_date']
 
-            cursor = connection.cursor()
-            for table, path in zip(tables, paths):
-                read_table(table, path, cursor)
+        with open(
+            f'{IMPORT_DATA_ADRESS}/genre.csv',
+            'r', encoding="utf-8-sig"
+        ) as csv_file:
+            dataReader = csv.DictReader(csv_file)
+
+            for row in dataReader:
+                genre = Genre()
+                genre.id = row['id']
+                genre.name = row['name']
+                genre.slug = row['slug']
+
+        with open(
+            f'{IMPORT_DATA_ADRESS}/category.csv',
+            'r', encoding="utf-8-sig"
+        ) as csv_file:
+            dataReader = csv.DictReader(csv_file)
+
+            for row in dataReader:
+                category = Category()
+                category.id = row['id']
+                category.name = row['name']
+                category.slug = row['slug']

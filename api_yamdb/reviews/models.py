@@ -4,12 +4,15 @@ from django.db import models
 
 
 class User(AbstractUser):
+    ADMIN = 'admin'
+    MODERATOR = 'moderator'
+    USER = 'user'
     ROLES = (
-        ('admin', 'admin'),
-        ('moderator', 'moderator'),
-        ('user', 'user')
+        (ADMIN, 'admin'),
+        (MODERATOR, 'moderator'),
+        (USER, 'user')
     )
-    role = models.CharField(max_length=20, choices=ROLES, default='user')
+    role = models.CharField(max_length=20, choices=ROLES, default=USER)
     bio = models.TextField('Биография', blank=True)
     email = models.EmailField(max_length=250, unique=True)
     confirmation_code = models.IntegerField(blank=True, default=0)
@@ -19,32 +22,23 @@ class User(AbstractUser):
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
 
-    REQUIRED_FIELDS = ['email']
-    USERNAME_FIELD = 'username'
-
     def __str__(self):
         return self.username
 
     @property
     def is_admin(self):
-        return self.role == 'admin' or self.is_superuser
+        return self.role == self.ADMIN or self.is_superuser
 
     @property
     def is_moderator(self):
-        return self.role == 'moderator'
+        return self.role == self.MODERATOR
 
     @property
     def is_user(self):
-        return self.role == 'user'
+        return self.role == self.USER
 
     def check_confirmation_code(self, code):
         return self.confirmation_code == code
-
-
-class Token(models.Model):
-    token = models.CharField(max_length=32, null=True, default=None)
-    user = models.OneToOneField(User, on_delete=models.CASCADE, unique=True)
-    confirmation_code = models.IntegerField(null=False, blank=False, default=0)
 
 
 class Genre(models.Model):
