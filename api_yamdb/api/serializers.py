@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from rest_framework import serializers
-from reviews.models import Category, Comment, Genre, Review, Title, Token
+from reviews.models import Category, Comment, Genre, Review, Title
 
 User = get_user_model()
 
@@ -36,12 +36,6 @@ class UserSerializer(serializers.ModelSerializer):
         return value
 
 
-class TokenSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Token
-        fields = '__all__'
-
-
 class AuthSerializer(serializers.Serializer):
     username = serializers.CharField(required=True)
     confirmation_code = serializers.IntegerField(required=True)
@@ -58,9 +52,9 @@ class SignupSerializer(serializers.Serializer):
     username = serializers.CharField(required=True)
     email = serializers.EmailField(required=True)
 
-    def validate_useranme(self, value):
+    def validate_username(self, value):
         if value == 'me':
-            raise ValidationError('cant user "me"')
+            raise ValidationError( 'Имя пользователя "me" не разрешено.')
         return value
 
 

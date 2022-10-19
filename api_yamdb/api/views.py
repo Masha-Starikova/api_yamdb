@@ -8,7 +8,7 @@ from rest_framework.filters import SearchFilter
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import AccessToken
-from reviews.models import Category, Genre, Review, Title, Token
+from reviews.models import Category, Genre, Review, Title
 
 from api.permissions import (AuthorOrAdminOrReadOnly, IsAdmin,
                              IsAuthenticatedOrReadOnly)
@@ -16,7 +16,7 @@ from api.serializers import (AuthSerializer, CategorySerializer,
                              CommentSerializer, GenreSerializer,
                              ReviewSerializer, SignupSerializer,
                              TitleCreateSerializer, TitleSerializer,
-                             TokenSerializer, UserSerializer)
+                             UserSerializer)
 from api.services import create_user
 
 from .filters import TitleFilter
@@ -63,15 +63,6 @@ class Signup(APIView):
                     status=200
                 )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-# this view for tests
-class TokenViewSet(viewsets.ModelViewSet):
-    serializer_class = TokenSerializer
-    queryset = Token.objects.all()
-    http_method_names = ['get']
-#    authentication_classes = (, )
-    permission_classes = (IsAdmin, )
 
 
 class GetToken(APIView):
