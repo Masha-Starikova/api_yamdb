@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.db.models import Avg
 from django.core.exceptions import ValidationError
 from rest_framework import serializers
 from reviews.models import Category, Comment, Genre, Review, Title, Token
@@ -77,33 +78,22 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = ('name', 'slug')
 
 
-class GenreField(serializers.SlugRelatedField):
-
-    def to_representation(self, value):
-        return GenreSerializer(value).data
-
-
-class CategoryField(serializers.SlugRelatedField):
-
-    def to_representation(self, value):
-        return CategorySerializer(value).data
-
-
 class TitleSerializer(serializers.ModelSerializer):
-    genre = GenreField(
-        many=True,
-        slug_field='slug',
-        queryset=Genre.objects.all()
-    )
-    category = CategoryField(
-        slug_field='slug',
-        queryset=Category.objects.all()
-    )
-    rating = serializers.IntegerField(read_only=True, required=False)
+    rating = serializers.SerializerMethodField()
+    category = CategorySerializer()
+    genre = GenreSerializer(many=True)
 
     class Meta:
         model = Title
-        fields = '__all__'
+        fields = (
+            'id', 'name', 'year', 'rating', 'description', 'genre', 'category'
+        )
+
+    def get_rating(self, obj):
+        rating = obj.reviews.aggregate(Avg('score')).get('score__avg')
+        if not rating:
+            return rating
+        return round(rating, 1)
 
 
 class TitleCreateSerializer(serializers.ModelSerializer):
