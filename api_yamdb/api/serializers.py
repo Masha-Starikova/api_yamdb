@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from rest_framework import serializers
-from reviews.models import Category, Comment, Genre, Review, Title, Token
+from reviews.models import Category, Comment, Genre, Review, Title
 
 User = get_user_model()
 
@@ -34,12 +34,6 @@ class UserSerializer(serializers.ModelSerializer):
                 'Имя пользователя "me" не разрешено.'
             )
         return value
-
-
-class TokenSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Token
-        fields = '__all__'
 
 
 class AuthSerializer(serializers.Serializer):
@@ -125,13 +119,9 @@ class CommentSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(
         read_only=True, slug_field='username'
     )
-    review = serializers.SlugRelatedField(
-        read_only=True, slug_field='text'
-    )
 
     class Meta:
         model = Comment
-#        fields = ('id', 'text', 'author', 'pub_date' )
         fields = '__all__'
 
 

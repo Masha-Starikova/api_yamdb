@@ -16,7 +16,7 @@ from api.serializers import (AuthSerializer, CategorySerializer,
                              CommentSerializer, GenreSerializer,
                              ReviewSerializer, SignupSerializer,
                              TitleCreateSerializer, TitleSerializer,
-                             TokenSerializer, UserSerializer)
+                             UserSerializer)
 from api.services import create_user
 
 from .filters import TitleFilter
@@ -63,15 +63,6 @@ class Signup(APIView):
                     status=200
                 )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-# this view for tests
-class TokenViewSet(viewsets.ModelViewSet):
-    serializer_class = TokenSerializer
-    queryset = Token.objects.all()
-    http_method_names = ['get']
-#    authentication_classes = (, )
-    permission_classes = (IsAdmin, )
 
 
 class GetToken(APIView):
@@ -156,18 +147,28 @@ class TitleViewSet(viewsets.ModelViewSet):
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
+#    queryset = Review.objects.all()
     serializer_class = ReviewSerializer
     permission_classes = [AuthorOrAdminOrReadOnly]
     http_method_names = ['get', 'post', 'patch', 'delete']
 
-    def get_title(self):
-        return get_object_or_404(Title, pk=self.kwargs.get('title_id'))
+    @action(
+        detail=False, methods=['patch', 'delete'],
+        url_path=r'(?P<review_id>\d+)',
+        lookup_field='title_id', url_name='rewiew_id'
+    )
+
+    def get_object(self):
+        return get_object_or_404(
+            self.queryset, title_id=self.kwargs[self.lookup_field])
 
     def get_queryset(self):
-        return self.get_title().reviews.all()
+        return self.get_object().reviews.all()
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user, title=self.get_title())
+        serializer.save(
+            author=self.request.user, title=self.get_object()
+        )
 
 
 class CommentViewSet(viewsets.ModelViewSet):
