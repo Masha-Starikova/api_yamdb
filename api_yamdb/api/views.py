@@ -9,8 +9,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
 from reviews.models import Category, Genre, Review, Title
 
-from api.permissions import (AuthorOrAdminOrReadOnly, IsAdmin,
-                            IsReadOnly)
+from api.permissions import (AuthorOrAdminOrReadOnly, IsAdmin, IsReadOnly)
 from api.serializers import (AuthSerializer, CategorySerializer,
                              CommentSerializer, GenreSerializer,
                              ReviewSerializer, SignupSerializer,
