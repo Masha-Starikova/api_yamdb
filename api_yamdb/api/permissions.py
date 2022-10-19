@@ -6,11 +6,6 @@ class IsAdmin(permissions.BasePermission):
         return request.user.is_authenticated and request.user.is_admin
 
 
-class IsAdminSup(permissions.BasePermission):
-    def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.is_admin
-
-
 class IsModerator(permissions.BasePermission):
     def has_permission(self, request, view):
         return request.user.is_authenticated and request.user.is_moderator
@@ -26,7 +21,7 @@ class IsReadOnly(permissions.BasePermission):
         return request.method in permissions.SAFE_METHODS
 
     def has_object_permission(self, request, view, obj):
-        return request.method in permissions.SAFE_METHODS        
+        return request.method in permissions.SAFE_METHODS
 
 
 class AuthorOrAdminOrReadOnly(permissions.BasePermission):

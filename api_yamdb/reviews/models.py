@@ -8,9 +8,9 @@ class User(AbstractUser):
     MODERATOR = 'moderator'
     USER = 'user'
     ROLES = (
-        (ADMIN , 'admin'),
+        (ADMIN, 'admin'),
         (MODERATOR, 'moderator'),
-        ( USER, 'user')
+        (USER, 'user')
     )
     role = models.CharField(max_length=20, choices=ROLES, default=USER)
     bio = models.TextField('Биография', blank=True)
@@ -39,13 +39,6 @@ class User(AbstractUser):
 
     def check_confirmation_code(self, code):
         return self.confirmation_code == code
-
-
-class Token(models.Model):
-    '''Используется для ...'''
-    token = models.CharField(max_length=32, null=True, default=None)
-    user = models.OneToOneField(User, on_delete=models.CASCADE, unique=True)
-    confirmation_code = models.IntegerField(null=False, blank=False, default=0)
 
 
 class Genre(models.Model):

@@ -53,9 +53,11 @@ class SignupSerializer(serializers.Serializer):
     username = serializers.CharField(required=True)
     email = serializers.EmailField(required=True)
 
-    def validate_useranme(self, value):
+    def validate_username(self, value):
         if value == 'me':
-            raise ValidationError('cant user "me"')
+            raise serializers.ValidationError(
+                'Имя пользователя "me" не разрешено.'
+            )
         return value
 
 
@@ -109,10 +111,13 @@ class CommentSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(
         read_only=True, slug_field='username'
     )
+#    review = serializers.SlugRelatedField(
+#        read_only=True, slug_field='text'
+#    )
 
     class Meta:
         model = Comment
-        fields = '__all__'
+        fields = ('id', 'text', 'author', 'pub_date')
 
 
 class ReviewSerializer(serializers.ModelSerializer):
