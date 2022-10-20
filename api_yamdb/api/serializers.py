@@ -111,9 +111,6 @@ class CommentSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(
         read_only=True, slug_field='username'
     )
-#    review = serializers.SlugRelatedField(
-#        read_only=True, slug_field='text'
-#    )
 
     class Meta:
         model = Comment
@@ -127,6 +124,11 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Review
+        lookup_field='title_id'
+#        extra_kwargs = {
+#            'url': {'view_name': 'reviews', 'lookup_field': 'review_id'},
+#            'titles': {'lookup_field': 'title_id'}
+#        }
         fields = ('id', 'text', 'author', 'score', 'pub_date')
 
     def validate(self, data):
