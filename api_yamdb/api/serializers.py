@@ -1,5 +1,4 @@
 from django.contrib.auth import get_user_model
-from django.db.models import Avg
 from django.core.exceptions import ValidationError
 from rest_framework import serializers
 from reviews.models import Category, Comment, Genre, Review, Title
@@ -105,9 +104,6 @@ class CommentSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(
         read_only=True, slug_field='username'
     )
-#    review = serializers.SlugRelatedField(
-#        read_only=True, slug_field='text'
-#    )
 
     class Meta:
         model = Comment
